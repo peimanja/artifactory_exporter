@@ -2,21 +2,27 @@ package arti
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/url"
+	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type APIClientConfig struct {
-	url  string
-	user string
-	pass string
+	Url  string
+	User string
+	Pass string
 }
 
 type SearchFeilds struct {
-	action string
-	from   string
-	to     string
-	repo   string
+	Action string
+	From   string
+	To     string
+	Repo   string
 }
 
 type ArtifactsAtr struct {
@@ -72,30 +78,69 @@ type StorageInfo struct {
 }
 
 func QueryArtiApi(config *APIClientConfig, path string) ([]byte, error) {
-	bodyBytes := []byte("")
+	log.WithFields(log.Fields{
+		"method": "GET",
+		"uri":    config.Url + "/api/" + path,
+	}).Debugln("Making API request")
+
+	u, err := url.Parse(config.Url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = net.LookupHost(u.Hostname())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", config.url+"/api/"+path, nil)
+	req, err := http.NewRequest("GET", config.Url+"/api/"+path, nil)
 	CheckErr(err)
-	req.SetBasicAuth(config.user, config.pass)
+	req.SetBasicAuth(config.User, config.Pass)
 	resp, err := client.Do(req)
 	CheckErr(err)
 	defer resp.Body.Close()
 
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	CheckErr(err)
+
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		CheckErr(err)
-		return bodyBytes, err
+		return bodyBytes, nil
+	} else if resp.StatusCode == 401 {
+		log.WithFields(log.Fields{
+			"method":      "GET",
+			"uri":         config.Url + "/api/" + path,
+			"status_code": resp.StatusCode,
+			"error":       string(bodyBytes),
+		}).Fatalf("User `%s` is not authorized to access this endpoint", config.User)
+	} else if resp.StatusCode == 404 {
+		log.WithFields(log.Fields{
+			"method":      "GET",
+			"uri":         config.Url + "/api/" + path,
+			"status_code": resp.StatusCode,
+			"error":       string(bodyBytes),
+		}).Fatalf("Looks like `%s` URL is wrong", config.Url)
 	}
-	return bodyBytes, err
+
+	return bodyBytes, errors.New(strconv.Itoa(resp.StatusCode))
 }
 
 func GetUp(config *APIClientConfig) float64 {
-	resp, err := QueryArtiApi(config, "system/ping")
-	CheckErr(err)
+	path := "system/ping"
+	resp, err := QueryArtiApi(config, path)
+
 	bodyString := string(resp)
 	if bodyString == "OK" {
 		return 1
 	}
+
+	log.WithFields(log.Fields{
+		"method":      "GET",
+		"uri":         config.Url + "/api/" + path,
+		"status_code": err,
+		"error":       string(resp),
+	}).Warn("There is an issue with Artifactory")
+
 	return 0
 }
 
@@ -117,7 +162,7 @@ func GetStorageInfo(config *APIClientConfig) (StorageInfo, error) {
 
 func GetRepoArtifacts(config *APIClientConfig, s SearchFeilds) float64 {
 	var results SearchResults
-	resp, err := QueryArtiApi(config, "search/dates?dateFields="+s.action+"&from="+s.from+"&to="+s.to+"&repos="+s.repo)
+	resp, err := QueryArtiApi(config, "search/dates?dateFields="+s.Action+"&from="+s.From+"&to="+s.To+"&repos="+s.Repo)
 	if err != nil {
 		return 0
 	}

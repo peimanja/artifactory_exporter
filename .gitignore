@@ -1,0 +1,7 @@
+/.build
+/.release
+/.tarballs
+/artifactory_exporter
+*.tar.gz
+*.test
+*-stamp

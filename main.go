@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
+	"github.com/peimanja/artifactory_exporter/arti"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -41,19 +40,23 @@ func newHandlerWithHistogram(handler http.Handler, histogram *prometheus.Histogr
 }
 
 func main() {
+	start := time.Now()
+
 	var (
-		listenAddress      = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9531").String()
-		metricsPath        = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
+		listenAddress      = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
+		metricsPath        = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
 		artiUser           = kingpin.Flag("artifactory.user", "User to access Artifactory.").Envar("ARTI_USER").Required().String()
 		artiPassword       = kingpin.Flag("artifactory.password", "Password of the user accessing the Artifactory.").Envar("ARTI_PASSWORD").Required().String()
-		artiScrapeURI      = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape Artifactory.").Default("http://localhost:8081/artifactory").String()
-		artiScrapeInterval = kingpin.Flag("artifactory.scrape-interval", "How often to scrape Artifactory in secoonds.").Default("30").Int64()
+		artiScrapeURI      = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
+		artiScrapeInterval = kingpin.Flag("artifactory.scrape-interval", "How often to scrape Artifactory in secoonds.").Envar("ARTI_SCRAPE_INTERVAL").Default("30").Int64()
+		logLevel           = kingpin.Flag("exporter.debug", "Enable debug mode.").Envar("DEBUG").Default("false").Bool()
+		ready              = false
 	)
 
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	config := &APIClientConfig{
+	config := &arti.APIClientConfig{
 		*artiScrapeURI,
 		*artiUser,
 		*artiPassword,
@@ -63,83 +66,19 @@ func main() {
 		FullTimestamp: true,
 	})
 
+	if *logLevel {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	go func() {
 		for {
-			up.Set(GetUp(config))
+			log.Infoln("Gathering metrics from Artifactory.")
+			metrics := arti.Collect(config)
+			arti.Updater(*metrics)
 
-			users, _ := GetUsers(config)
-			countUsers := CountUsers(users)
-			for _, count := range countUsers {
-				userCount.WithLabelValues(count.Realm).Set(count.Count)
-			}
-			storageInfo, err := (GetStorageInfo(config))
-			CheckErr(err)
-
-			artifactCountTotal.Set(RemoveCommas(storageInfo.Summary.BinariesSummary.ArtifactsCount))
-
-			binariesCountTotal.Set(RemoveCommas(storageInfo.Summary.BinariesSummary.BinariesCount))
-
-			artifacts_size, err := BytesConverter(storageInfo.Summary.BinariesSummary.ArtifactsSize)
-			CheckErr(err)
-			artifactsSizeTotal.Set(artifacts_size)
-
-			binaries_size, err := BytesConverter(storageInfo.Summary.BinariesSummary.BinariesSize)
-			CheckErr(err)
-			binariesSizeTotal.Set(binaries_size)
-
-			fileStoreType := strings.ToLower(storageInfo.Summary.FileStoreSummary.StorageType)
-			fileStoreDir := storageInfo.Summary.FileStoreSummary.StorageDirectory
-			fileStoreSize, err := BytesConverter(storageInfo.Summary.FileStoreSummary.TotalSpace)
-			CheckErr(err)
-			fileStore.WithLabelValues(fileStoreType, fileStoreDir).Set(fileStoreSize)
-
-			fileStoreUsedBytes, err := BytesConverter(storageInfo.Summary.FileStoreSummary.UsedSpace)
-			CheckErr(err)
-			fileStoreUsed.WithLabelValues(fileStoreType, fileStoreDir).Set(fileStoreUsedBytes)
-
-			fileStoreFreeBytes, err := BytesConverter(storageInfo.Summary.FileStoreSummary.FreeSpace)
-			CheckErr(err)
-			fileStoreFree.WithLabelValues(fileStoreType, fileStoreDir).Set(fileStoreFreeBytes)
-
-			searchArtifacts := &SearchFeilds{}
-			searchArtifacts.from = strconv.FormatInt(FromEpoch(0), 10)
-			for _, repo := range storageInfo.Summary.RepositoriesSummary {
-				name := repo.Name
-				if name == "TOTAL" {
-					continue
-				}
-				repoType := strings.ToLower(repo.Type)
-				foldersCount := float64(repo.FoldersCount)
-				filesCount := float64(repo.FilesCount)
-				itemsCount := float64(repo.ItemsCount)
-				usedSpace, err := BytesConverter(repo.UsedSpace)
-				CheckErr(err)
-				packageType := strings.ToLower(repo.PackageType)
-				percentage := RemoveCommas(repo.Percentage)
-
-				repoUsedSpace.WithLabelValues(name, repoType, packageType).Set(usedSpace)
-				repoFolderCount.WithLabelValues(name, repoType, packageType).Set(foldersCount)
-				repoFilesCount.WithLabelValues(name, repoType, packageType).Set(filesCount)
-				repoItemsCount.WithLabelValues(name, repoType, packageType).Set(itemsCount)
-				repoPercentage.WithLabelValues(name, repoType, packageType).Set(percentage)
-
-				searchArtifacts.repo = name
-				for _, searchMinutesInterval := range []time.Duration{1, 5, 60} {
-					searchArtifacts.from = strconv.FormatInt(fromEpoch(searchMinutesInterval), 10)
-					for _, action := range []string{"created", "lastDownloaded"} {
-						searchArtifacts.action = action
-						numArtifacts := GetRepoArtifacts(config, *searchArtifacts)
-						if action == "created" {
-							repoCreatedArtifacts.WithLabelValues(name, repoType, packageType, strconv.FormatInt(int64(searchMinutesInterval), 10)).Set(numArtifacts)
-						} else {
-							repoDownloadedArtifacts.WithLabelValues(name, repoType, packageType, strconv.FormatInt(int64(searchMinutesInterval), 10)).Set(numArtifacts)
-						}
-					}
-				}
-			}
-
-			log.Infoln("Finished gathering metrics from Artifactory. Will update in: " + strconv.FormatInt(*artiScrapeInterval, 10) + "s")
-			time.Sleep(time.Duration(*artiScrapeInterval))
+			log.Infof("Completed gathering metrics from Artifactory. Will update in: %ds", *artiScrapeInterval)
+			ready = true
+			time.Sleep(time.Duration(*artiScrapeInterval) * time.Second)
 		}
 	}()
 
@@ -153,7 +92,14 @@ func main() {
 			 </body>
 			 </html>`))
 	})
-	log.Infof("Listening on: %s", *listenAddress)
+
+	for !ready {
+		log.Debugln("Waiting for exporter to collect all metrics before starting the server")
+	}
+
+	elapsed := time.Since(start)
+	log.Infof("Starting the server and listening on: %s", *listenAddress)
 	log.Infof("Exposing metrics at: %s", *metricsPath)
+	log.Infof("Initialization took: %s", elapsed)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }

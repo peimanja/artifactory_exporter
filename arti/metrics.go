@@ -11,7 +11,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",
-			Help:      "State of Artifactory",
+			Help:      "Current health status of the server (1 = UP, 0 = DOWN)",
 		})
 
 	UserCount = prometheus.NewGaugeVec(
@@ -26,25 +26,25 @@ var (
 	ArtifactCountTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "artifacts_count_total",
+			Name:      "artifacts_total_count",
 			Help:      "Total artifacts count stored in Artifactory",
 		})
 	ArtifactsSizeTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "artifacts_size_bytes_total",
+			Name:      "artifacts_total_size_bytes",
 			Help:      "Total artifacts Size stored in Artifactory in bytes",
 		})
 	BinariesCountTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "binaries_count_total",
+			Name:      "binaries_total_count",
 			Help:      "Total binaries count stored in Artifactory",
 		})
 	BinariesSizeTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "binaries_size_bytes_total",
+			Name:      "binaries_total_size_bytes",
 			Help:      "Total binaries Size stored in Artifactory in bytes",
 		})
 	FileStore = prometheus.NewGaugeVec(
@@ -53,7 +53,7 @@ var (
 			Name:      "filestore_bytes",
 			Help:      "Total space in the file store in bytes",
 		},
-		[]string{"storageType", "storageDirectory"},
+		[]string{"storage_type", "storage_dir"},
 	)
 	FileStoreUsed = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -61,7 +61,7 @@ var (
 			Name:      "filestore_used_bytes",
 			Help:      "Space used in the file store in bytes",
 		},
-		[]string{"storageType", "storageDirectory"},
+		[]string{"storage_type", "storage_dir"},
 	)
 	FileStoreFree = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -69,7 +69,7 @@ var (
 			Name:      "filestore_free_bytes",
 			Help:      "Space free in the file store in bytes",
 		},
-		[]string{"storageType", "storageDirectory"},
+		[]string{"storage_type", "storage_dir"},
 	)
 	RepoUsedSpace = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -111,22 +111,6 @@ var (
 		},
 		[]string{"name", "type", "package_type"},
 	)
-	RepoCreatedArtifacts = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "artifacts_created",
-			Help:      "Created artifacts in an Artifactory repository",
-		},
-		[]string{"name", "type", "package_type", "minutes_ago"},
-	)
-	RepoDownloadedArtifacts = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "artifacts_downloaded",
-			Help:      "Downloaded artifacts from an Artifactory repository",
-		},
-		[]string{"name", "type", "package_type", "minutes_ago"},
-	)
 )
 
 func init() {
@@ -144,6 +128,4 @@ func init() {
 	prometheus.MustRegister(RepoFilesCount)
 	prometheus.MustRegister(RepoItemsCount)
 	prometheus.MustRegister(RepoPercentage)
-	prometheus.MustRegister(RepoCreatedArtifacts)
-	prometheus.MustRegister(RepoDownloadedArtifacts)
 }
