@@ -82,7 +82,7 @@ var (
 	RepoFolderCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "repo_folder_count",
+			Name:      "repo_folders",
 			Help:      "Number of folders in an Artifactory repository",
 		},
 		[]string{"name", "type", "package_type"},
@@ -90,7 +90,7 @@ var (
 	RepoFilesCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "repo_files_count",
+			Name:      "repo_files",
 			Help:      "Number files in an Artifactory repository",
 		},
 		[]string{"name", "type", "package_type"},
@@ -98,7 +98,7 @@ var (
 	RepoItemsCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "repo_items_count",
+			Name:      "repo_items",
 			Help:      "Number Items in an Artifactory repository",
 		},
 		[]string{"name", "type", "package_type"},
