@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const namespace = "arti"
+const namespace = "artifactory"
 
 var (
 	Up = prometheus.NewGauge(
@@ -26,25 +26,25 @@ var (
 	ArtifactCountTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "artifacts_total_count",
+			Name:      "artifacts",
 			Help:      "Total artifacts count stored in Artifactory",
 		})
 	ArtifactsSizeTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "artifacts_total_size_bytes",
+			Name:      "artifacts_size_bytes",
 			Help:      "Total artifacts Size stored in Artifactory in bytes",
 		})
 	BinariesCountTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "binaries_total_count",
+			Name:      "binaries",
 			Help:      "Total binaries count stored in Artifactory",
 		})
 	BinariesSizeTotal = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "binaries_total_size_bytes",
+			Name:      "binaries_size_bytes",
 			Help:      "Total binaries Size stored in Artifactory in bytes",
 		})
 	FileStore = prometheus.NewGaugeVec(
