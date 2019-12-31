@@ -21,15 +21,15 @@ usage: main --artifactory.user=ARTIFACTORY.USER [<flags>]
 
 Flags:
   -h, --help            Show context-sensitive help (also try --help-long and --help-man).
-      --web.listen-address=":9531"  
+      --web.listen-address=":9531"
                         Address to listen on for web interface and telemetry.
-      --web.telemetry-path="/metrics"  
+      --web.telemetry-path="/metrics"
                         Path under which to expose metrics.
-      --artifactory.user=ARTIFACTORY.USER  
+      --artifactory.user=ARTIFACTORY.USER
                         User to access Artifactory.
       --artifactory.scrape-uri="http://localhost:8081/artifactory"  
                         URI on which to scrape Artifactory.
-      --artifactory.scrape-interval=30  
+      --artifactory.scrape-interval=30
                         How often to scrape Artifactory in secoonds.
       --exporter.debug  Enable debug mode.
 ```
@@ -52,15 +52,15 @@ The exporter returns the following metrics:
 | ------ | ----------- | ------ |
 | artifactory_up | Current health status of the server 1 = UP |  |
 | artifactory_security_users | Number of artifactory users | `realm` |
-| artifactory_artifacts_total_count | Total artifacts count stored in Artifactory |  |
-| artifactory_artifacts_total_size_bytes | Total artifacts Size stored in Artifactory in bytes |  |
-| artifactory_binaries_total_count | Total binaries count stored in Artifactory |  |
-| artifactory_binaries_total_size_bytes | Total binaries Size stored in Artifactory in bytes |  |
+| artifactory_artifacts | Total artifacts count stored in Artifactory |  |
+| artifactory_artifacts_size_bytes | Total artifacts Size stored in Artifactory in bytes |  |
+| artifactory_binaries | Total binaries count stored in Artifactory |  |
+| artifactory_binaries_size_bytes | Total binaries Size stored in Artifactory in bytes |  |
 | artifactory_filestore_bytes | Total space in the file store in bytes | `storage_dir`, `storage_type` |
 | artifactory_filestore_used_bytes | Space used in the file store in bytes | `storage_dir`, `storage_type` |
 | artifactory_filestore_free_bytes | Space free in the file store in bytes | `storage_dir`, `storage_type` |
 | artifactory_repo_used_bytes | Space used by an Artifactory repository in bytes | `name`, `package_type`, `type` |
-| artifactory_repo_folder_count | Number of folders in an Artifactory repository | `name`, `package_type`, `type` |
-| artifactory_repo_files_count | Number files in an Artifactory repository | `name`, `package_type`, `type` |
-| artifactory_repo_items_count | Number Items in an Artifactory repository | `name`, `package_type`, `type` |
+| artifactory_repo_folders | Number of folders in an Artifactory repository | `name`, `package_type`, `type` |
+| artifactory_repo_files | Number files in an Artifactory repository | `name`, `package_type`, `type` |
+| artifactory_repo_items | Number Items in an Artifactory repository | `name`, `package_type`, `type` |
 | artifactory_repo_percentage | Percentage of space used by an Artifactory repository | `name`, `package_type`, `type` |
