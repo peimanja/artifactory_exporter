@@ -4,19 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
-
-type APIClientConfig struct {
-	Url  string
-	User string
-	Pass string
-}
 
 type SearchFeilds struct {
 	Action string
@@ -82,16 +74,6 @@ func QueryArtiApi(config *APIClientConfig, path string) ([]byte, error) {
 		"method": "GET",
 		"uri":    config.Url + "/api/" + path,
 	}).Debugln("Making API request")
-
-	u, err := url.Parse(config.Url)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = net.LookupHost(u.Hostname())
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", config.Url+"/api/"+path, nil)

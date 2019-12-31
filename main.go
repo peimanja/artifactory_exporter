@@ -8,7 +8,6 @@ import (
 	"github.com/peimanja/artifactory_exporter/arti"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gopkg.in/alecthomas/kingpin.v2"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -43,52 +42,41 @@ func main() {
 	start := time.Now()
 
 	var (
-		listenAddress      = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
-		metricsPath        = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
-		artiUser           = kingpin.Flag("artifactory.user", "User to access Artifactory.").Envar("ARTI_USER").Required().String()
-		artiPassword       = kingpin.Flag("artifactory.password", "Password of the user accessing the Artifactory.").Envar("ARTI_PASSWORD").Required().String()
-		artiScrapeURI      = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
-		artiScrapeInterval = kingpin.Flag("artifactory.scrape-interval", "How often to scrape Artifactory in secoonds.").Envar("ARTI_SCRAPE_INTERVAL").Default("30").Int64()
-		logLevel           = kingpin.Flag("exporter.debug", "Enable debug mode.").Envar("DEBUG").Default("false").Bool()
-		ready              = false
+		ready = false
 	)
 
-	kingpin.HelpFlag.Short('h')
-	kingpin.Parse()
-
-	config := &arti.APIClientConfig{
-		*artiScrapeURI,
-		*artiUser,
-		*artiPassword,
+	config, err := arti.NewConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
 	})
 
-	if *logLevel {
+	if config.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
 	go func() {
 		for {
 			log.Infoln("Gathering metrics from Artifactory.")
-			metrics := arti.Collect(config)
+			metrics := arti.Collect(config.ApiConfig)
 			arti.Updater(*metrics)
 
-			log.Infof("Completed gathering metrics from Artifactory. Will update in: %ds", *artiScrapeInterval)
+			log.Infof("Completed gathering metrics from Artifactory. Will update in: %ds", config.ArtiScrapeInterval)
 			ready = true
-			time.Sleep(time.Duration(*artiScrapeInterval) * time.Second)
+			time.Sleep(time.Duration(config.ArtiScrapeInterval) * time.Second)
 		}
 	}()
 
-	http.Handle(*metricsPath, newHandlerWithHistogram(promhttp.Handler(), histogramVec))
+	http.Handle(config.MetricsPath, newHandlerWithHistogram(promhttp.Handler(), histogramVec))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 			 <head><title>Artifactory Exporter</title></head>
 			 <body>
 			 <h1>Artifactory Exporter</h1>
-			 <p><a href='` + *metricsPath + `'>Metrics</a></p>
+			 <p><a href='` + config.MetricsPath + `'>Metrics</a></p>
 			 </body>
 			 </html>`))
 	})
@@ -98,8 +86,8 @@ func main() {
 	}
 
 	elapsed := time.Since(start)
-	log.Infof("Starting the server and listening on: %s", *listenAddress)
-	log.Infof("Exposing metrics at: %s", *metricsPath)
+	log.Infof("Starting the server and listening on: %s", config.ListenAddress)
+	log.Infof("Exposing metrics at: %s", config.MetricsPath)
 	log.Infof("Initialization took: %s", elapsed)
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	log.Fatal(http.ListenAndServe(config.ListenAddress, nil))
 }
