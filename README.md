@@ -4,23 +4,23 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 
 
 ## Note
-This exporter is under development and more metrics will be added.
+This exporter is under development and more metrics will be added later on.
 
 
 ## Usage
 
 ### Docker
 
-To run the firehose exporter as a Docker container, run:
+Set the `ARTI_USERNAME` and `ARTI_PASSWORD` in `env_file_name` and run the artifactory exporter as a Docker container, run:
 
 ```bash
-$ docker run -p 9531:9531 --env ARTI_USERNAME=$ARTI_USERNAME --env ARTI_PASSWORD=$ARTI_ADMIN_PASS peimanja/artifactory_exporter:latest <flags>
+$ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
 ```
 
 ### Flags
 
 ```bash
-$  Docker run peimanja/artifactory_exporter:latest -h
+$  docker run peimanja/artifactory_exporter:latest -h
 usage: main --artifactory.user=ARTIFACTORY.USER [<flags>]
 
 Flags:
