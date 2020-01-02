@@ -1,6 +1,10 @@
 # JFrog Artifactory Exporter 
 
-A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) metrics. 
+A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) stats. 
+
+
+## Note
+This exporter is under development and more metrics will be added.
 
 
 ## Usage
@@ -10,7 +14,7 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 To run the firehose exporter as a Docker container, run:
 
 ```bash
-$ docker run -p 9531:9531 --env ARTI_PASSWORD=$ARTI_ADMIN_PASS peimanja/artifactory_exporter:latest --artifactory.user=admin <flags>
+$ docker run -p 9531:9531 --env ARTI_USERNAME=$ARTI_USERNAME --env ARTI_PASSWORD=$ARTI_ADMIN_PASS peimanja/artifactory_exporter:latest <flags>
 ```
 
 ### Flags
@@ -38,7 +42,7 @@ Flags:
 | `web.listen-address`<br/>`WEB_LISTEN_ADDR` | No | `:9531`| Address to listen on for web interface and telemetry. |
 | `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH` | No | `/metrics` | Path under which to expose metrics. |
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
-| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | | Flag that enables SSL certificate verification for the scrape URI. |
+| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `false` | Timeout for trying to get stats from JFrog Artifactory. |
 | `ARTI_USERNAME` | Yes | | User to access Artifactory |
 | `ARTI_PASSWORD` | Yes | | Password of the user accessing the Artifactory |
