@@ -1,5 +1,7 @@
 # JFrog Artifactory Exporter 
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/peimanja/artifactory_exporter)](https://goreportcard.com/report/github.com/peimanja/artifactory_exporter)
+
 A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) stats. 
 
 
