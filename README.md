@@ -45,7 +45,7 @@ Flags:
 | `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH` | No | `/metrics` | Path under which to expose metrics. |
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
-| `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `false` | Timeout for trying to get stats from JFrog Artifactory. |
+| `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
 | `ARTI_USERNAME` | Yes | | User to access Artifactory |
 | `ARTI_PASSWORD` | Yes | | Password of the user accessing the Artifactory |
 
