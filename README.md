@@ -13,7 +13,7 @@ This exporter is under development and more metrics will be added later on.
 
 ### Docker
 
-Set the `ARTI_USERNAME` and `ARTI_PASSWORD` in `env_file_name` and run the artifactory exporter as a Docker container, run:
+Set the `ARTI_USERNAME` and `ARTI_PASSWORD` in `env_file_name` and run the artifactory exporter as a Docker container:
 
 ```bash
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
