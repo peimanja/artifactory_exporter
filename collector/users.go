@@ -6,13 +6,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type User struct {
+type user struct {
 	Name  string `json:"name"`
 	Realm string `json:"realm"`
 }
 
-func (e *Exporter) fetchUsers() ([]User, error) {
-	var users []User
+func (e *Exporter) fetchUsers() ([]user, error) {
+	var users []user
 	resp, err := fetchHTTP(e.URI, "security/users", e.bc, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ type usersCount struct {
 	realm string
 }
 
-func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users []User, ch chan<- prometheus.Metric) {
+func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users []user, ch chan<- prometheus.Metric) {
 
 	userCount := []usersCount{
 		{0, "saml"},

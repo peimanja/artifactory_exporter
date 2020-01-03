@@ -19,11 +19,13 @@ var (
 	artiTimeout   = kingpin.Flag("artifactory.timeout", "Timeout for trying to get stats from JFrog Artifactory.").Envar("ARTI_TIMEOUT").Default("5s").Duration()
 )
 
+// Username and Password for Artifactory HTTP Basic Authentication
 type BasicCredentials struct {
 	Username string `required:"true" envconfig:"ARTI_USERNAME"`
 	Password string `required:"true" envconfig:"ARTI_PASSWORD"`
 }
 
+// Config represents all configuration options for running the Exporter.
 type Config struct {
 	ListenAddress    string
 	MetricsPath      string
@@ -34,6 +36,7 @@ type Config struct {
 	Logger           log.Logger
 }
 
+// Creates new Artifactory exporter Config
 func NewConfig() (*Config, error) {
 
 	promlogConfig := &promlog.Config{}
