@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type StorageInfo struct {
+type storageInfo struct {
 	StorageSummary struct {
 		BinariesSummary struct {
 			BinariesCount  string `json:"binariesCount"`
@@ -65,8 +65,8 @@ type StorageInfo struct {
 	} `json:"binariesSummary"`
 }
 
-func (e *Exporter) fetchStorageInfo() (StorageInfo, error) {
-	var storageInfo StorageInfo
+func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
+	var storageInfo storageInfo
 	resp, err := fetchHTTP(e.URI, "storageinfo", e.bc, e.sslVerify, e.timeout)
 	if err != nil {
 		return storageInfo, err
@@ -78,7 +78,7 @@ func (e *Exporter) fetchStorageInfo() (StorageInfo, error) {
 	return storageInfo, nil
 }
 
-func RemoveCommas(str string) (float64, error) {
+func removeCommas(str string) (float64, error) {
 
 	reg, err := regexp.Compile("[^0-9.]+")
 	if err != nil {
@@ -92,11 +92,11 @@ func RemoveCommas(str string) (float64, error) {
 	return convertedStr, nil
 }
 
-func BytesConverter(str string) (float64, error) {
+func bytesConverter(str string) (float64, error) {
 	type errorString struct {
 		s string
 	}
-	num, err := RemoveCommas(str)
+	num, err := removeCommas(str)
 	if err != nil {
 		return 0, err
 	}
@@ -120,7 +120,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := RemoveCommas(count)
+	value, _ := removeCommas(count)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
 
@@ -129,7 +129,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := BytesConverter(size)
+	value, _ := bytesConverter(size)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
 
@@ -138,11 +138,11 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := BytesConverter(size)
+	value, _ := bytesConverter(size)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir)
 }
 
-type RepoSummary struct {
+type repoSummary struct {
 	Name         string
 	Type         string
 	FoldersCount float64
@@ -153,36 +153,36 @@ type RepoSummary struct {
 	Percentage   float64
 }
 
-func (e *Exporter) extractRepoSummary(storageInfo StorageInfo, ch chan<- prometheus.Metric) {
+func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometheus.Metric) {
 	var err error
-	repoSummary := RepoSummary{}
-	repoSummaryList := []RepoSummary{}
+	rs := repoSummary{}
+	repoSummaryList := []repoSummary{}
 	for _, repo := range storageInfo.StorageSummary.RepositoriesSummaryList {
 		if repo.RepoKey == "TOTAL" {
 			continue
 		}
-		repoSummary.Name = repo.RepoKey
-		repoSummary.Type = strings.ToLower(repo.RepoType)
-		repoSummary.FoldersCount = float64(repo.FoldersCount)
-		repoSummary.FilesCount = float64(repo.FilesCount)
-		repoSummary.ItemsCount = float64(repo.ItemsCount)
-		repoSummary.PackageType = strings.ToLower(repo.PackageType)
-		repoSummary.UsedSpace, err = BytesConverter(repo.UsedSpace)
+		rs.Name = repo.RepoKey
+		rs.Type = strings.ToLower(repo.RepoType)
+		rs.FoldersCount = float64(repo.FoldersCount)
+		rs.FilesCount = float64(repo.FilesCount)
+		rs.ItemsCount = float64(repo.ItemsCount)
+		rs.PackageType = strings.ToLower(repo.PackageType)
+		rs.UsedSpace, err = bytesConverter(repo.UsedSpace)
 		if err != nil {
 			e.jsonParseFailures.Inc()
 			return
 		}
-		repoSummary.Percentage, err = RemoveCommas(repo.Percentage)
+		rs.Percentage, err = removeCommas(repo.Percentage)
 		if err != nil {
 			e.jsonParseFailures.Inc()
 			return
 		}
-		repoSummaryList = append(repoSummaryList, repoSummary)
+		repoSummaryList = append(repoSummaryList, rs)
 	}
 	e.exportRepo(repoSummaryList, ch)
 }
 
-func (e *Exporter) exportRepo(repoSummaries []RepoSummary, ch chan<- prometheus.Metric) {
+func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.Metric) {
 
 	for _, repoSummary := range repoSummaries {
 		for metricName, metric := range storageMetrics {
