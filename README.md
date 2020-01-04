@@ -58,6 +58,7 @@ The exporter returns the following metrics:
 | artifactory_up | Was the last scrape of Artifactory successful. |  |
 | artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  |
 | artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  |
+| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp` |
 | artifactory_security_users | Number of Artifactory users for each realm. | `realm` |
 | artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  |
 | artifactory_storage_artifacts_size_bytes | Total artifacts Size stored in Artifactory in bytes. |  |

@@ -20,8 +20,9 @@ const (
 )
 
 var (
-	filestoreLabelNames = []string{"storage_type", "storage_dir"}
-	repoLabelNames      = []string{"name", "type", "package_type"}
+	filestoreLabelNames   = []string{"storage_type", "storage_dir"}
+	repoLabelNames        = []string{"name", "type", "package_type"}
+	replicationLabelNames = []string{"name", "type", "cron_exp"}
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
@@ -31,6 +32,10 @@ func newMetric(metricName string, subsystem string, docString string, labelNames
 type metrics map[string]*prometheus.Desc
 
 var (
+	replicationMetrics = metrics{
+		"enabled": newMetric("enabled", "replication", "Replication status for an Artifactory repository (1 = enabled).", replicationLabelNames),
+	}
+
 	securityMetrics = metrics{
 		"users": newMetric("users", "security", "Number of Artifactory users for each realm.", []string{"realm"}),
 	}
@@ -97,6 +102,9 @@ func NewExporter(uri string, bc config.BasicCredentials, sslVerify bool, timeout
 // Describe describes all the metrics ever exported by the Artifactory exporter. It
 // implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
+	for _, m := range replicationMetrics {
+		ch <- m
+	}
 	for _, m := range securityMetrics {
 		ch <- m
 	}
@@ -195,6 +203,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		}
 	}
 	e.extractRepoSummary(storageInfo, ch)
+
+	replications, err := e.fetchReplications()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+
+	e.exportReplications(replications, ch)
 
 	return 1
 }
