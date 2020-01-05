@@ -73,3 +73,5 @@ The exporter returns the following metrics:
 | artifactory_storage_repo_files | Number files in an Artifactory repository. | `name`, `package_type`, `type` |
 | artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` |
 | artifactory_storage_repo_percentage | Percentage of space used by an Artifactory repository. | `name`, `package_type`, `type` |
+| artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | |
+| artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` |

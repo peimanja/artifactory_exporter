@@ -56,6 +56,11 @@ var (
 		"repoPercentage": newMetric("repo_percentage", "storage", "Percentage of space used by an Artifactory repository.", repoLabelNames),
 	}
 
+	systemMetrics = metrics{
+		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", nil),
+		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", []string{"version", "revision"}),
+	}
+
 	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
 )
 
@@ -110,6 +115,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 		ch <- m
 	}
 	for _, m := range storageMetrics {
+		ch <- m
+	}
+	for _, m := range systemMetrics {
 		ch <- m
 	}
 	ch <- artifactoryUp
@@ -221,6 +229,27 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	}
 
 	e.exportReplications(replications, ch)
+
+	// Fetch System stats
+	healthy, err := e.fetchHealth()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+	buildInfo, err := e.fetchBuildInfo()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+
+	for metricName, metric := range systemMetrics {
+		switch metricName {
+		case "healthy":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
+		case "version":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
+		}
+	}
 
 	return 1
 }
