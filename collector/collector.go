@@ -37,7 +37,8 @@ var (
 	}
 
 	securityMetrics = metrics{
-		"users": newMetric("users", "security", "Number of Artifactory users for each realm.", []string{"realm"}),
+		"users":  newMetric("users", "security", "Number of Artifactory users for each realm.", []string{"realm"}),
+		"groups": newMetric("groups", "security", "Number of Artifactory groups", nil),
 	}
 
 	storageMetrics = metrics{
@@ -164,15 +165,23 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
 	// Fetch Security stats
+	users, err := e.fetchUsers()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+	groups, err := e.fetchGroups()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+
 	for metricName, metric := range securityMetrics {
 		switch metricName {
 		case "users":
-			users, err := e.fetchUsers()
-			if err != nil {
-				level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
-				return 0
-			}
 			e.countUsers(metricName, metric, users, ch)
+		case "groups":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
 		}
 	}
 
@@ -204,6 +213,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	}
 	e.extractRepoSummary(storageInfo, ch)
 
+	// Fetch Replications stats
 	replications, err := e.fetchReplications()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
