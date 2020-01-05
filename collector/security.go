@@ -30,7 +30,6 @@ type usersCount struct {
 }
 
 func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users []user, ch chan<- prometheus.Metric) {
-
 	userCount := []usersCount{
 		{0, "saml"},
 		{0, "internal"},
@@ -43,7 +42,6 @@ func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users 
 			userCount[1].count += 1
 		}
 	}
-
 	e.exportUsersCount(metricName, metric, userCount, ch)
 }
 
@@ -55,5 +53,22 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 	for _, user := range users {
 		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, user.count, user.realm)
 	}
+}
 
+type group struct {
+	Name  string `json:"name"`
+	Realm string `json:"uri"`
+}
+
+func (e *Exporter) fetchGroups() ([]group, error) {
+	var groups []group
+	resp, err := fetchHTTP(e.URI, "security/groups", e.bc, e.sslVerify, e.timeout)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(resp, &groups); err != nil {
+		e.jsonParseFailures.Inc()
+		return groups, err
+	}
+	return groups, nil
 }
