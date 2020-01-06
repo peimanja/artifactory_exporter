@@ -6,8 +6,8 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 
 
 ## Note
-This exporter is under development and more metrics will be added later on.
-
+This exporter is under development and more metrics will be added later on. Right now it only works for all non OSS Artifactory versions but support for OSS wil come soon but not all metrics will be available since some Rest API endpoints are not available.
+Tested on Artifactory Enterprise 6.16.0
 
 ## Usage
 
