@@ -31,3 +31,22 @@ func (e *Exporter) fetchBuildInfo() (buildInfo, error) {
 	}
 	return buildInfo, nil
 }
+
+type licenseInfo struct {
+	Type         string `json:"type"`
+	ValidThrough string `json:"validThrough"`
+	LicensedTo   string `json:"licensedTo"`
+}
+
+func (e *Exporter) fetchLicense() (licenseInfo, error) {
+	var licenseInfo licenseInfo
+	resp, err := fetchHTTP(e.URI, "system/license", e.bc, e.sslVerify, e.timeout)
+	if err != nil {
+		return licenseInfo, err
+	}
+	if err := json.Unmarshal(resp, &licenseInfo); err != nil {
+		e.jsonParseFailures.Inc()
+		return licenseInfo, err
+	}
+	return licenseInfo, nil
+}

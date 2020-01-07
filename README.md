@@ -6,8 +6,7 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 
 
 ## Note
-This exporter is under development and more metrics will be added later on. Right now it only works for all non OSS Artifactory versions but support for OSS wil come soon but not all metrics will be available since some Rest API endpoints are not available.
-Tested on Artifactory Enterprise 6.16.0
+This exporter is under development and more metrics will be added later. Tested on Artifactory Enterprise and OSS version `6.16.0`.
 
 ## Usage
 
@@ -51,27 +50,28 @@ Flags:
 
 ### Metrics
 
-The exporter returns the following metrics:
+Some metrics are not available with Artifactory OSS license. The exporter returns the following metrics:
 
-| Metric | Description | Labels |
-| ------ | ----------- | ------ |
-| artifactory_up | Was the last scrape of Artifactory successful. |  |
-| artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  |
-| artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  |
-| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp` |
-| artifactory_security_groups | Number of Artifactory groups. | |
-| artifactory_security_users | Number of Artifactory users for each realm. | `realm` |
-| artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  |
-| artifactory_storage_artifacts_size_bytes | Total artifacts Size stored in Artifactory in bytes. |  |
-| artifactory_storage_binaries | Total binaries count stored in Artifactory. |  |
-| artifactory_storage_binaries_size_bytes | Total binaries Size stored in Artifactory in bytes. |  |
-| artifactory_storage_filestore_bytes | Total space in the file store in bytes. | `storage_dir`, `storage_type` |
-| artifactory_storage_filestore_used_bytes | Space used in the file store in bytes. | `storage_dir`, `storage_type` |
-| artifactory_storage_filestore_free_bytes | Space free in the file store in bytes. | `storage_dir`, `storage_type` |
-| artifactory_storage_repo_used_bytes | Space used by an Artifactory repository in bytes. | `name`, `package_type`, `type` |
-| artifactory_storage_repo_folders | Number of folders in an Artifactory repository. | `name`, `package_type`, `type` |
-| artifactory_storage_repo_files | Number files in an Artifactory repository. | `name`, `package_type`, `type` |
-| artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` |
-| artifactory_storage_repo_percentage | Percentage of space used by an Artifactory repository. | `name`, `package_type`, `type` |
-| artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | |
-| artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` |
+| Metric | Description | Labels | OSS support |
+| ------ | ----------- | ------ | ------ |
+| artifactory_up | Was the last scrape of Artifactory successful. |  | :white_check_mark: |
+| artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  | :white_check_mark: |
+| artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  | :white_check_mark: |
+| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp` | |
+| artifactory_security_groups | Number of Artifactory groups. | | |
+| artifactory_security_users | Number of Artifactory users for each realm. | `realm` | |
+| artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  | :white_check_mark: |
+| artifactory_storage_artifacts_size_bytes | Total artifacts Size stored in Artifactory in bytes. |  | :white_check_mark: |
+| artifactory_storage_binaries | Total binaries count stored in Artifactory. |  | :white_check_mark: |
+| artifactory_storage_binaries_size_bytes | Total binaries Size stored in Artifactory in bytes. |  | :white_check_mark: |
+| artifactory_storage_filestore_bytes | Total space in the file store in bytes. | `storage_dir`, `storage_type` | :white_check_mark: |
+| artifactory_storage_filestore_used_bytes | Space used in the file store in bytes. | `storage_dir`, `storage_type` | :white_check_mark: |
+| artifactory_storage_filestore_free_bytes | Space free in the file store in bytes. | `storage_dir`, `storage_type` | :white_check_mark: |
+| artifactory_storage_repo_used_bytes | Space used by an Artifactory repository in bytes. | `name`, `package_type`, `type` | :white_check_mark: |
+| artifactory_storage_repo_folders | Number of folders in an Artifactory repository. | `name`, `package_type`, `type` | :white_check_mark: |
+| artifactory_storage_repo_files | Number files in an Artifactory repository. | `name`, `package_type`, `type` | :white_check_mark: |
+| artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` | :white_check_mark: |
+| artifactory_storage_repo_percentage | Percentage of space used by an Artifactory repository. | `name`, `package_type`, `type` | :white_check_mark: |
+| artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | :white_check_mark: |
+| artifactory_system_license | License type and expiry as labels. | `type`, `licensed_to`, `expires` | :white_check_mark: |
+| artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | :white_check_mark: |
