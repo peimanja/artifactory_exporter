@@ -59,6 +59,7 @@ var (
 	systemMetrics = metrics{
 		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", nil),
 		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", []string{"version", "revision"}),
+		"license": newMetric("license", "system", "License type and expiry as labels", []string{"type", "licensed_to", "expires"}),
 	}
 
 	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
@@ -172,24 +173,33 @@ func fetchHTTP(uri string, path string, bc config.BasicCredentials, sslVerify bo
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
-	// Fetch Security stats
-	users, err := e.fetchUsers()
+	// Fetch System stats
+	var licenseType string
+	license, err := e.fetchLicense()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
 		return 0
 	}
-	groups, err := e.fetchGroups()
+	licenseType = strings.ToLower(license.Type)
+	healthy, err := e.fetchHealth()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		return 0
+	}
+	buildInfo, err := e.fetchBuildInfo()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
 		return 0
 	}
 
-	for metricName, metric := range securityMetrics {
+	for metricName, metric := range systemMetrics {
 		switch metricName {
-		case "users":
-			e.countUsers(metricName, metric, users, ch)
-		case "groups":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
+		case "healthy":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
+		case "version":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
+		case "license":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, licenseType, license.LicensedTo, license.ValidThrough)
 		}
 	}
 
@@ -221,34 +231,37 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	}
 	e.extractRepoSummary(storageInfo, ch)
 
-	// Fetch Replications stats
-	replications, err := e.fetchReplications()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
-		return 0
-	}
-
-	e.exportReplications(replications, ch)
-
-	// Fetch System stats
-	healthy, err := e.fetchHealth()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
-		return 0
-	}
-	buildInfo, err := e.fetchBuildInfo()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
-		return 0
-	}
-
-	for metricName, metric := range systemMetrics {
-		switch metricName {
-		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
-		case "version":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
+	// Some API endpoints are not available in OSS
+	if licenseType != "oss" {
+		// Fetch Security stats
+		users, err := e.fetchUsers()
+		if err != nil {
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			return 0
 		}
+		groups, err := e.fetchGroups()
+		if err != nil {
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			return 0
+		}
+
+		for metricName, metric := range securityMetrics {
+			switch metricName {
+			case "users":
+				e.countUsers(metricName, metric, users, ch)
+			case "groups":
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
+			}
+		}
+
+		// Fetch Replications stats
+		replications, err := e.fetchReplications()
+		if err != nil {
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			return 0
+		}
+
+		e.exportReplications(replications, ch)
 	}
 
 	return 1
