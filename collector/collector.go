@@ -177,18 +177,18 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	var licenseType string
 	license, err := e.fetchLicense()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/license", "err", err)
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
 	healthy, err := e.fetchHealth()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/ping", "err", err)
 		return 0
 	}
 	buildInfo, err := e.fetchBuildInfo()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/version", "err", err)
 		return 0
 	}
 
@@ -206,7 +206,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	// Fetch Storage Info stats
 	storageInfo, err := e.fetchStorageInfo()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching storageinfo", "err", err)
 		return 0
 	}
 	fileStoreType := strings.ToLower(storageInfo.StorageSummary.FileStoreSummary.StorageType)
@@ -236,12 +236,12 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		// Fetch Security stats
 		users, err := e.fetchUsers()
 		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/users", "err", err)
 			return 0
 		}
 		groups, err := e.fetchGroups()
 		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/groups", "err", err)
 			return 0
 		}
 
@@ -257,7 +257,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		// Fetch Replications stats
 		replications, err := e.fetchReplications()
 		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory", "err", err)
+			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching replications", "err", err)
 			return 0
 		}
 
