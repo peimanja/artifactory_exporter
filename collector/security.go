@@ -13,7 +13,7 @@ type user struct {
 
 func (e *Exporter) fetchUsers() ([]user, error) {
 	var users []user
-	resp, err := fetchHTTP(e.URI, "security/users", e.bc, e.sslVerify, e.timeout)
+	resp, err := fetchHTTP(e.URI, "security/users", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ type group struct {
 
 func (e *Exporter) fetchGroups() ([]group, error) {
 	var groups []group
-	resp, err := fetchHTTP(e.URI, "security/groups", e.bc, e.sslVerify, e.timeout)
+	resp, err := fetchHTTP(e.URI, "security/groups", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	exporter, err := collector.NewExporter(c.ArtiScrapeURI, *c.BasicCredentials, c.ArtiSSLVerify, c.ArtiTimeout, c.Logger)
+	exporter, err := collector.NewExporter(c.ArtiScrapeURI, *c.Credentials, c.AuthMethod, c.ArtiSSLVerify, c.ArtiTimeout, c.Logger)
 	if err != nil {
 		level.Error(c.Logger).Log("msg", "Error creating an exporter", "err", err)
 		os.Exit(1)

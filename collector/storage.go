@@ -67,7 +67,7 @@ type storageInfo struct {
 
 func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
 	var storageInfo storageInfo
-	resp, err := fetchHTTP(e.URI, "storageinfo", e.bc, e.sslVerify, e.timeout)
+	resp, err := fetchHTTP(e.URI, "storageinfo", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return storageInfo, err
 	}
