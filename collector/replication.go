@@ -22,7 +22,7 @@ type replication struct {
 
 func (e *Exporter) fetchReplications() ([]replication, error) {
 	var replications []replication
-	resp, err := fetchHTTP(e.URI, "replications", e.bc, e.sslVerify, e.timeout)
+	resp, err := fetchHTTP(e.URI, "replications", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}

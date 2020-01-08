@@ -6,13 +6,36 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 
 
 ## Note
+
 This exporter is under development and more metrics will be added later. Tested on Artifactory Enterprise and OSS version `6.16.0`.
+
+## Authentication
+
+The Artifactory provider supports multiple means of authentication. The following methods are supported:
+  * Basic Auth
+  * Bearer Token
+
+### Basic Auth
+
+Basic auth may be used by setting `ARTI_USERNAME` and `ARTI_PASSWORD` environment variables.
+
+### Bearer Token
+
+Artifactory access tokens may be used via the Authorization header by setting `ARTI_ACCESS_TOKEN` environment variable.
 
 ## Usage
 
+### Binary
+
+Download the binary for your operation system from [release](https://github.com/peimanja/artifactory_exporter/releases) page and run it:
+```bash
+$ ./artifactory_exporter <flags>
+```
+
 ### Docker
 
-Set the `ARTI_USERNAME` and `ARTI_PASSWORD` in `env_file_name` and run the artifactory exporter as a Docker container:
+Set the credentials in `env_file_name` and you can deploy this exporter using the [peimanja/artifactory_exporter](https://registry.hub.docker.com/r/peimanja/artifactory_exporter/) Docker image:
+:
 
 ```bash
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
@@ -45,8 +68,11 @@ Flags:
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
-| `ARTI_USERNAME` | Yes | | User to access Artifactory |
-| `ARTI_PASSWORD` | Yes | | Password of the user accessing the Artifactory |
+| `ARTI_USERNAME` | *No | | User to access Artifactory |
+| `ARTI_PASSWORD` | *No | | Password of the user accessing the Artifactory |
+| `ARTI_ACCESS_TOKEN` | *No | | Access token for accessing the Artifactory |
+
+* Either `ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variables has to be set.
 
 ### Metrics
 

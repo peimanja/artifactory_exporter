@@ -68,11 +68,12 @@ var (
 // Exporter collects JFrog Artifactory stats from the given URI and
 // exports them using the prometheus metrics package.
 type Exporter struct {
-	URI       string
-	bc        config.BasicCredentials
-	sslVerify bool
-	timeout   time.Duration
-	mutex     sync.RWMutex
+	URI        string
+	cred       config.Credentials
+	authMethod string
+	sslVerify  bool
+	timeout    time.Duration
+	mutex      sync.RWMutex
 
 	up                              prometheus.Gauge
 	totalScrapes, jsonParseFailures prometheus.Counter
@@ -80,13 +81,14 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri string, bc config.BasicCredentials, sslVerify bool, timeout time.Duration, logger log.Logger) (*Exporter, error) {
+func NewExporter(uri string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration, logger log.Logger) (*Exporter, error) {
 
 	return &Exporter{
-		URI:       uri,
-		bc:        bc,
-		sslVerify: sslVerify,
-		timeout:   timeout,
+		URI:        uri,
+		cred:       cred,
+		authMethod: authMethod,
+		sslVerify:  sslVerify,
+		timeout:    timeout,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",
@@ -139,7 +141,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- e.jsonParseFailures
 }
 
-func fetchHTTP(uri string, path string, bc config.BasicCredentials, sslVerify bool, timeout time.Duration) ([]byte, error) {
+func fetchHTTP(uri string, path string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration) ([]byte, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
@@ -150,7 +152,11 @@ func fetchHTTP(uri string, path string, bc config.BasicCredentials, sslVerify bo
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(bc.Username, bc.Password)
+	if authMethod == "userPass" {
+		req.SetBasicAuth(cred.Username, cred.Password)
+	} else if authMethod == "accessToken" {
+		req.Header.Add("Authorization", "Bearer "+cred.AccessToken)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
