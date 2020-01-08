@@ -11,7 +11,7 @@ This exporter is under development and more metrics will be added later. Tested 
 
 ## Authentication
 
-The Artifactory provider supports multiple means of authentication. The following methods are supported:
+The Artifactory exporter supports multiple means of authentication. The following methods are supported:
   * Basic Auth
   * Bearer Token
 
