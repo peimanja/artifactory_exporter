@@ -141,14 +141,15 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- e.jsonParseFailures
 }
 
-func fetchHTTP(uri string, path string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration) ([]byte, error) {
+func (e *Exporter) fetchHTTP(uri string, path string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration) ([]byte, error) {
+	fullPath := fmt.Sprintf("%s/api/%s", uri, path)
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
 		Transport: tr,
 	}
-
-	req, err := http.NewRequest("GET", uri+"/api/"+path, nil)
+	level.Debug(e.logger).Log("msg", "Fetching http", "path", fullPath)
+	req, err := http.NewRequest("GET", fullPath, nil)
 	if err != nil {
 		return nil, err
 	}
