@@ -68,6 +68,8 @@ Flags:
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
+| `log.level` | No | `info` | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
+| `log.format` | No | `logfmt` | Output format of log messages. One of: [logfmt, json]. |
 | `ARTI_USERNAME` | *No | | User to access Artifactory |
 | `ARTI_PASSWORD` | *No | | Password of the user accessing the Artifactory |
 | `ARTI_ACCESS_TOKEN` | *No | | Access token for accessing the Artifactory |

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -22,11 +23,13 @@ type replication struct {
 
 func (e *Exporter) fetchReplications() ([]replication, error) {
 	var replications []replication
-	resp, err := fetchHTTP(e.URI, "replications", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	level.Debug(e.logger).Log("msg", "Fetching replications stats")
+	resp, err := e.fetchHTTP(e.URI, "replications", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &replications); err != nil {
+		level.Debug(e.logger).Log("msg", "There was an issue getting replication respond")
 		e.jsonParseFailures.Inc()
 		return replications, err
 	}
@@ -35,14 +38,19 @@ func (e *Exporter) fetchReplications() ([]replication, error) {
 
 func (e *Exporter) exportReplications(replications []replication, ch chan<- prometheus.Metric) {
 	if len(replications) == 0 {
+		level.Debug(e.logger).Log("msg", "No replications stats found")
 		return
 	}
 	for _, replication := range replications {
 		for metricName, metric := range replicationMetrics {
 			switch metricName {
 			case "enabled":
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, b2f(replication.Enabled), replication.RepoKey, strings.ToLower(replication.ReplicationType), replication.CronExp)
-
+				enabled := b2f(replication.Enabled)
+				repo := replication.RepoKey
+				rType := strings.ToLower(replication.ReplicationType)
+				cronExp := replication.CronExp
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "cron", cronExp, "value", enabled)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, cronExp)
 			}
 		}
 	}

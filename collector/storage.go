@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -67,19 +68,21 @@ type storageInfo struct {
 
 func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
 	var storageInfo storageInfo
-	resp, err := fetchHTTP(e.URI, "storageinfo", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	level.Debug(e.logger).Log("msg", "Fetching storage info stats")
+	resp, err := e.fetchHTTP(e.URI, "storageinfo", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return storageInfo, err
 	}
 	if err := json.Unmarshal(resp, &storageInfo); err != nil {
+		level.Debug(e.logger).Log("msg", "There was an issue getting storageInfo respond")
 		e.jsonParseFailures.Inc()
 		return storageInfo, err
 	}
 	return storageInfo, nil
 }
 
-func removeCommas(str string) (float64, error) {
-
+func (e *Exporter) removeCommas(str string) (float64, error) {
+	level.Debug(e.logger).Log("msg", "Removing other characters to extract number from string")
 	reg, err := regexp.Compile("[^0-9.]+")
 	if err != nil {
 		return 0, err
@@ -88,31 +91,36 @@ func removeCommas(str string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	level.Debug(e.logger).Log("msg", "Successfully converted string to number", "string", str, "number", convertedStr)
 	return convertedStr, nil
 }
 
-func bytesConverter(str string) (float64, error) {
+func (e *Exporter) bytesConverter(str string) (float64, error) {
 	type errorString struct {
 		s string
 	}
-	num, err := removeCommas(str)
+	var bytesValue float64
+	level.Debug(e.logger).Log("msg", "Converting size to bytes")
+	num, err := e.removeCommas(str)
 	if err != nil {
 		return 0, err
 	}
 
 	if strings.Contains(str, "bytes") {
-		return num, nil
+		bytesValue = num
 	} else if strings.Contains(str, "KB") {
-		return num * 1024, nil
+		bytesValue = num * 1024
 	} else if strings.Contains(str, "MB") {
-		return num * 1024 * 1024, nil
+		bytesValue = num * 1024 * 1024
 	} else if strings.Contains(str, "GB") {
-		return num * 1024 * 1024 * 1024, nil
+		bytesValue = num * 1024 * 1024 * 1024
 	} else if strings.Contains(str, "TB") {
-		return num * 1024 * 1024 * 1024 * 1024, nil
+		bytesValue = num * 1024 * 1024 * 1024 * 1024
+	} else {
+		return 0, fmt.Errorf("Could not convert %s to bytes", str)
 	}
-	return 0, fmt.Errorf("Could not convert %s to bytes", str)
+	level.Debug(e.logger).Log("msg", "Successfully converted string to bytes", "string", str, "value", bytesValue)
+	return bytesValue, nil
 }
 
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, ch chan<- prometheus.Metric) {
@@ -120,7 +128,8 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := removeCommas(count)
+	value, _ := e.removeCommas(count)
+	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
 
@@ -129,7 +138,8 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := bytesConverter(size)
+	value, _ := e.bytesConverter(size)
+	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
 
@@ -138,7 +148,8 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := bytesConverter(size)
+	value, _ := e.bytesConverter(size)
+	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "type", fileStoreType, "directory", fileStoreDir, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir)
 }
 
@@ -157,6 +168,7 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
+	level.Debug(e.logger).Log("msg", "Extracting repo summeriest")
 	for _, repo := range storageInfo.StorageSummary.RepositoriesSummaryList {
 		if repo.RepoKey == "TOTAL" {
 			continue
@@ -167,12 +179,12 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 		rs.FilesCount = float64(repo.FilesCount)
 		rs.ItemsCount = float64(repo.ItemsCount)
 		rs.PackageType = strings.ToLower(repo.PackageType)
-		rs.UsedSpace, err = bytesConverter(repo.UsedSpace)
+		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
 		if err != nil {
 			e.jsonParseFailures.Inc()
 			return
 		}
-		rs.Percentage, err = removeCommas(repo.Percentage)
+		rs.Percentage, err = e.removeCommas(repo.Percentage)
 		if err != nil {
 			e.jsonParseFailures.Inc()
 			return
@@ -183,19 +195,23 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 }
 
 func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.Metric) {
-
 	for _, repoSummary := range repoSummaries {
 		for metricName, metric := range storageMetrics {
 			switch metricName {
 			case "repoUsed":
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.UsedSpace)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.UsedSpace, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			case "repoFolders":
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.FoldersCount)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FoldersCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			case "repoItems":
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.ItemsCount)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.ItemsCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			case "repoFiles":
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.FilesCount)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FilesCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			case "repoPercentage":
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.Percentage)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.Percentage, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			}
 		}

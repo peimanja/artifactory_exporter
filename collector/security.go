@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/json"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,7 +14,8 @@ type user struct {
 
 func (e *Exporter) fetchUsers() ([]user, error) {
 	var users []user
-	resp, err := fetchHTTP(e.URI, "security/users", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	level.Debug(e.logger).Log("msg", "Fetching users stats")
+	resp, err := e.fetchHTTP(e.URI, "security/users", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -30,6 +32,7 @@ type usersCount struct {
 }
 
 func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users []user, ch chan<- prometheus.Metric) {
+	level.Debug(e.logger).Log("msg", "Counting users")
 	userCount := []usersCount{
 		{0, "saml"},
 		{0, "internal"},
@@ -48,9 +51,11 @@ func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users 
 func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, users []usersCount, ch chan<- prometheus.Metric) {
 	if users[0].count == 0 && users[1].count == 0 {
 		e.jsonParseFailures.Inc()
+		level.Debug(e.logger).Log("msg", "There was an issue getting users respond")
 		return
 	}
 	for _, user := range users {
+		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", user.realm, "value", user.count)
 		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, user.count, user.realm)
 	}
 }
@@ -62,11 +67,13 @@ type group struct {
 
 func (e *Exporter) fetchGroups() ([]group, error) {
 	var groups []group
-	resp, err := fetchHTTP(e.URI, "security/groups", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	level.Debug(e.logger).Log("msg", "Fetching groups stats")
+	resp, err := e.fetchHTTP(e.URI, "security/groups", e.cred, e.authMethod, e.sslVerify, e.timeout)
 	if err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &groups); err != nil {
+		level.Debug(e.logger).Log("msg", "There was an issue getting groups respond")
 		e.jsonParseFailures.Inc()
 		return groups, err
 	}
