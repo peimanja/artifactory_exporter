@@ -87,7 +87,8 @@ func (e *Exporter) removeCommas(str string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	convertedStr, err := strconv.ParseFloat(reg.ReplaceAllString(str, ""), 64)
+	strArray := strings.Fields(str)
+	convertedStr, err := strconv.ParseFloat(reg.ReplaceAllString(strArray[0], ""), 64)
 	if err != nil {
 		return 0, err
 	}
@@ -128,7 +129,12 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := e.removeCommas(count)
+	value, err := e.removeCommas(count)
+	if err != nil {
+		e.jsonParseFailures.Inc()
+		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		return
+	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
@@ -138,7 +144,12 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := e.bytesConverter(size)
+	value, err := e.bytesConverter(size)
+	if err != nil {
+		e.jsonParseFailures.Inc()
+		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		return
+	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value)
 }
@@ -148,7 +159,12 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, _ := e.bytesConverter(size)
+	value, err := e.bytesConverter(size)
+	if err != nil {
+		e.jsonParseFailures.Inc()
+		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		return
+	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "type", fileStoreType, "directory", fileStoreDir, "value", value)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir)
 }
