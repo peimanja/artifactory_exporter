@@ -101,5 +101,5 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
 | artifactory_storage_repo_percentage | Percentage of space used by an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
 | artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | &#9989; |
-| artifactory_system_license | License type and expiry as labels. | `type`, `licensed_to`, `expires` | &#9989; |
+| artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
