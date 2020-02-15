@@ -59,7 +59,7 @@ var (
 	systemMetrics = metrics{
 		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", nil),
 		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", []string{"version", "revision"}),
-		"license": newMetric("license", "system", "License type and expiry as labels", []string{"type", "licensed_to", "expires"}),
+		"license": newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", []string{"type", "licensed_to", "expires"}),
 	}
 
 	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
@@ -206,7 +206,15 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		case "version":
 			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
 		case "license":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, licenseType, license.LicensedTo, license.ValidThrough)
+			var validThrough float64
+			timeNow := float64(time.Now().Unix())
+			if validThroughTime, err := time.Parse("Jan 02, 2006", license.ValidThrough); err != nil {
+				level.Warn(e.logger).Log("msg", "Can't parse Artifactory license ValidThrough", "err", err)
+				validThrough = timeNow
+			} else {
+				validThrough = float64(validThroughTime.Unix())
+			}
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough - timeNow, licenseType, license.LicensedTo, license.ValidThrough)
 		}
 	}
 
