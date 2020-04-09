@@ -208,13 +208,18 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		case "license":
 			var validThrough float64
 			timeNow := float64(time.Now().Unix())
-			if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
-				level.Warn(e.logger).Log("msg", "Can't parse Artifactory license ValidThrough", "err", err)
+			switch licenseType {
+			case "oss":
 				validThrough = timeNow
-			} else {
-				validThrough = float64(validThroughTime.Unix())
+			default:
+				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
+					level.Warn(e.logger).Log("msg", "Can't parse Artifactory license ValidThrough", "err", err)
+					validThrough = timeNow
+				} else {
+					validThrough = float64(validThroughTime.Unix())
+				}
 			}
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough - timeNow, licenseType, license.LicensedTo, license.ValidThrough)
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, licenseType, license.LicensedTo, license.ValidThrough)
 		}
 	}
 
