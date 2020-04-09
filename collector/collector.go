@@ -229,24 +229,24 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching storageinfo", "err", err)
 		return 0
 	}
-	fileStoreType := strings.ToLower(storageInfo.StorageSummary.FileStoreSummary.StorageType)
-	fileStoreDir := storageInfo.StorageSummary.FileStoreSummary.StorageDirectory
+	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
+	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
 	for metricName, metric := range storageMetrics {
 		switch metricName {
 		case "artifacts":
-			e.exportCount(metricName, metric, storageInfo.StorageSummary.BinariesSummary.ArtifactsCount, ch)
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ArtifactsCount, ch)
 		case "artifactsSize":
-			e.exportSize(metricName, metric, storageInfo.StorageSummary.BinariesSummary.ArtifactsSize, ch)
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.ArtifactsSize, ch)
 		case "binaries":
-			e.exportCount(metricName, metric, storageInfo.StorageSummary.BinariesSummary.BinariesCount, ch)
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.BinariesCount, ch)
 		case "binariesSize":
-			e.exportSize(metricName, metric, storageInfo.StorageSummary.BinariesSummary.BinariesSize, ch)
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.BinariesSize, ch)
 		case "filestore":
-			e.exportFilestore(metricName, metric, storageInfo.StorageSummary.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
 		case "filestoreUsed":
-			e.exportFilestore(metricName, metric, storageInfo.StorageSummary.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
 		case "filestoreFree":
-			e.exportFilestore(metricName, metric, storageInfo.StorageSummary.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
 		}
 	}
 	e.extractRepoSummary(storageInfo, ch)

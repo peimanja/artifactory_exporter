@@ -12,33 +12,14 @@ import (
 )
 
 type storageInfo struct {
-	StorageSummary struct {
-		BinariesSummary struct {
-			BinariesCount  string `json:"binariesCount"`
-			BinariesSize   string `json:"binariesSize"`
-			ArtifactsSize  string `json:"artifactsSize"`
-			Optimization   string `json:"optimization"`
-			ItemsCount     string `json:"itemsCount"`
-			ArtifactsCount string `json:"artifactsCount"`
-		} `json:"binariesSummary"`
-		FileStoreSummary struct {
-			StorageType      string `json:"storageType"`
-			StorageDirectory string `json:"storageDirectory"`
-			TotalSpace       string `json:"totalSpace"`
-			UsedSpace        string `json:"usedSpace"`
-			FreeSpace        string `json:"freeSpace"`
-		} `json:"fileStoreSummary"`
-		RepositoriesSummaryList []struct {
-			RepoKey      string `json:"repoKey"`
-			RepoType     string `json:"repoType"`
-			FoldersCount int    `json:"foldersCount"`
-			FilesCount   int    `json:"filesCount"`
-			UsedSpace    string `json:"usedSpace"`
-			ItemsCount   int    `json:"itemsCount"`
-			PackageType  string `json:"packageType"`
-			Percentage   string `json:"percentage"`
-		} `json:"repositoriesSummaryList"`
-	} `json:"storageSummary"`
+	BinariesSummary struct {
+		BinariesCount  string `json:"binariesCount"`
+		BinariesSize   string `json:"binariesSize"`
+		ArtifactsSize  string `json:"artifactsSize"`
+		Optimization   string `json:"optimization"`
+		ItemsCount     string `json:""`
+		ArtifactsCount string `json:"artifactsCount"`
+	} `json:"binariesSummary"`
 	FileStoreSummary struct {
 		StorageType      string `json:"storageType"`
 		StorageDirectory string `json:"storageDirectory"`
@@ -56,14 +37,6 @@ type storageInfo struct {
 		PackageType  string `json:"packageType"`
 		Percentage   string `json:"percentage"`
 	} `json:"repositoriesSummaryList"`
-	BinariesSummary struct {
-		BinariesCount  string `json:"binariesCount"`
-		BinariesSize   string `json:"binariesSize"`
-		ArtifactsSize  string `json:"artifactsSize"`
-		Optimization   string `json:"optimization"`
-		ItemsCount     string `json:""`
-		ArtifactsCount string `json:"artifactsCount"`
-	} `json:"binariesSummary"`
 }
 
 func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
@@ -184,8 +157,8 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
-	level.Debug(e.logger).Log("msg", "Extracting repo summeriest")
-	for _, repo := range storageInfo.StorageSummary.RepositoriesSummaryList {
+	level.Debug(e.logger).Log("msg", "Extracting repo summaries")
+	for _, repo := range storageInfo.RepositoriesSummaryList {
 		if repo.RepoKey == "TOTAL" {
 			continue
 		}
@@ -197,13 +170,19 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 		rs.PackageType = strings.ToLower(repo.PackageType)
 		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
 		if err != nil {
+			level.Debug(e.logger).Log("msg", "There was an issue parsing repo UsedSpace", "repo", repo.RepoKey, "err", err)
 			e.jsonParseFailures.Inc()
 			return
 		}
-		rs.Percentage, err = e.removeCommas(repo.Percentage)
-		if err != nil {
-			e.jsonParseFailures.Inc()
-			return
+		if repo.Percentage == "N/A" {
+			rs.Percentage = 0
+		} else {
+			rs.Percentage, err = e.removeCommas(repo.Percentage)
+			if err != nil {
+				level.Debug(e.logger).Log("msg", "There was an issue parsing repo Percentage", "repo", repo.RepoKey, "err", err)
+				e.jsonParseFailures.Inc()
+				return
+			}
 		}
 		repoSummaryList = append(repoSummaryList, rs)
 	}
