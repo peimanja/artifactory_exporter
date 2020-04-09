@@ -157,7 +157,7 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
-	level.Debug(e.logger).Log("msg", "Extracting repo summeriest")
+	level.Debug(e.logger).Log("msg", "Extracting repo summaries")
 	for _, repo := range storageInfo.RepositoriesSummaryList {
 		if repo.RepoKey == "TOTAL" {
 			continue
@@ -170,13 +170,19 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 		rs.PackageType = strings.ToLower(repo.PackageType)
 		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
 		if err != nil {
+			level.Debug(e.logger).Log("msg", "There was an issue parsing repo UsedSpace", "repo", repo.RepoKey, "err", err)
 			e.jsonParseFailures.Inc()
 			return
 		}
-		rs.Percentage, err = e.removeCommas(repo.Percentage)
-		if err != nil {
-			e.jsonParseFailures.Inc()
-			return
+		if repo.Percentage == "N/A" {
+			rs.Percentage = 0
+		} else {
+			rs.Percentage, err = e.removeCommas(repo.Percentage)
+			if err != nil {
+				level.Debug(e.logger).Log("msg", "There was an issue parsing repo Percentage", "repo", repo.RepoKey, "err", err)
+				e.jsonParseFailures.Inc()
+				return
+			}
 		}
 		repoSummaryList = append(repoSummaryList, rs)
 	}
