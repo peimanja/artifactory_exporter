@@ -22,7 +22,7 @@ const (
 var (
 	filestoreLabelNames   = []string{"storage_type", "storage_dir"}
 	repoLabelNames        = []string{"name", "type", "package_type"}
-	replicationLabelNames = []string{"name", "type", "cron_exp"}
+	replicationLabelNames = []string{"name", "type", "url", "cron_exp"}
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
