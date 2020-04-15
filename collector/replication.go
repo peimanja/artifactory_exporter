@@ -16,6 +16,7 @@ type replication struct {
 	SyncProperties                  bool   `json:"syncProperties"`
 	PathPrefix                      string `json:"pathPrefix"`
 	RepoKey                         string `json:"repoKey"`
+	URL                             string `json:"url"`
 	EnableEventReplication          bool   `json:"enableEventReplication"`
 	CheckBinaryExistenceInFilestore bool   `json:"checkBinaryExistenceInFilestore"`
 	SyncStatistics                  bool   `json:"syncStatistics"`
@@ -48,9 +49,10 @@ func (e *Exporter) exportReplications(replications []replication, ch chan<- prom
 				enabled := b2f(replication.Enabled)
 				repo := replication.RepoKey
 				rType := strings.ToLower(replication.ReplicationType)
+				rURL := strings.ToLower(replication.URL)
 				cronExp := replication.CronExp
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "cron", cronExp, "value", enabled)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, cronExp)
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "url", rURL, "cron", cronExp, "value", enabled)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, rURL, cronExp)
 			}
 		}
 	}
