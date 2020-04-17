@@ -143,17 +143,23 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 }
 
 type repoSummary struct {
-	Name         string
-	Type         string
-	FoldersCount float64
-	FilesCount   float64
-	UsedSpace    float64
-	ItemsCount   float64
-	PackageType  string
-	Percentage   float64
+	Name               string
+	Type               string
+	FoldersCount       float64
+	FilesCount         float64
+	UsedSpace          float64
+	ItemsCount         float64
+	PackageType        string
+	Percentage         float64
+	TotalCreate1m      float64
+	TotalCreated5m     float64
+	TotalCreated15m    float64
+	TotalDownloaded1m  float64
+	TotalDownloaded5m  float64
+	TotalDownloaded15m float64
 }
 
-func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometheus.Metric) {
+func (e *Exporter) extractRepo(storageInfo storageInfo) ([]repoSummary, error) {
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
@@ -172,7 +178,7 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 		if err != nil {
 			level.Debug(e.logger).Log("msg", "There was an issue parsing repo UsedSpace", "repo", repo.RepoKey, "err", err)
 			e.jsonParseFailures.Inc()
-			return
+			return repoSummaryList, err
 		}
 		if repo.Percentage == "N/A" {
 			rs.Percentage = 0
@@ -181,12 +187,12 @@ func (e *Exporter) extractRepoSummary(storageInfo storageInfo, ch chan<- prometh
 			if err != nil {
 				level.Debug(e.logger).Log("msg", "There was an issue parsing repo Percentage", "repo", repo.RepoKey, "err", err)
 				e.jsonParseFailures.Inc()
-				return
+				return repoSummaryList, err
 			}
 		}
 		repoSummaryList = append(repoSummaryList, rs)
 	}
-	e.exportRepo(repoSummaryList, ch)
+	return repoSummaryList, err
 }
 
 func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.Metric) {

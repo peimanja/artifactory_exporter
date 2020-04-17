@@ -62,6 +62,15 @@ var (
 		"license": newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", []string{"type", "licensed_to", "expires"}),
 	}
 
+	artifactsMetrics = metrics{
+		"created1m":     newMetric("created_1m", "artifacts", "Number of artifacts created in the repository in the last 1 minute.", repoLabelNames),
+		"created5m":     newMetric("created_5m", "artifacts", "Number of artifacts created in the repository in the last 5 minutes.", repoLabelNames),
+		"created15m":    newMetric("created_15m", "artifacts", "Number of artifacts created in the repository in the last 15 minutes.", repoLabelNames),
+		"downloaded1m":  newMetric("downloaded_1m", "artifacts", "Number of artifacts downloaded from the repository in the last 1 minute.", repoLabelNames),
+		"downloaded5m":  newMetric("downloaded_5m", "artifacts", "Number of artifacts downloaded from the repository in the last 5 minutes.", repoLabelNames),
+		"downloaded15m": newMetric("downloaded_15m", "artifacts", "Number of artifacts downloaded from the repository in the last 15 minutes.", repoLabelNames),
+	}
+
 	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
 )
 
@@ -123,6 +132,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range systemMetrics {
 		ch <- m
 	}
+	for _, m := range artifactsMetrics {
+		ch <- m
+	}
 	ch <- artifactoryUp
 	ch <- e.totalScrapes.Desc()
 	ch <- e.jsonParseFailures.Desc()
@@ -174,7 +186,6 @@ func (e *Exporter) fetchHTTP(uri string, path string, cred config.Credentials, a
 	}
 
 	return bodyBytes, nil
-
 }
 
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
@@ -249,7 +260,20 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
 		}
 	}
-	e.extractRepoSummary(storageInfo, ch)
+
+	// Extract repo summaries from storageInfo and register them
+	repoSummaryList, err := e.extractRepo(storageInfo)
+	if err != nil {
+		return 0
+	}
+	e.exportRepo(repoSummaryList, ch)
+
+	// Get Downloaded and Created items for all repo in the last 1 and 5 minutes and add it to repoSummaryList
+	repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
+	if err != nil {
+		return 0
+	}
+	e.exportArtifacts(repoSummaryList, ch)
 
 	// Some API endpoints are not available in OSS
 	if licenseType != "oss" {

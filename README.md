@@ -99,7 +99,12 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_storage_repo_folders | Number of folders in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
 | artifactory_storage_repo_files | Number files in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
 | artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
-| artifactory_storage_repo_percentage | Percentage of space used by an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_created_1m | Number of artifacts created in the repo (last 1 minute). | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_created_5m | Number of artifacts created in the repo (last 5 minutes). | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_created_15m | Number of artifacts created in the repo (last 15 minutes). | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_downloaded_1m | Number of artifacts downloaded from the repository (last 1 minute). | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_downloaded_5m | Number of artifacts downloaded from the repository (last 5 minutes). | `name`, `package_type`, `type` | &#9989; |
+| artifactory_artifacts_downloaded_15m | Number of artifacts downloaded from the repository (last 15 minute). | `name`, `package_type`, `type` | &#9989; |
 | artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | &#9989; |
 | artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
