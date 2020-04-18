@@ -14,32 +14,32 @@ import (
 
 func main() {
 
-	c, err := config.NewConfig()
+	conf, err := config.NewConfig()
 	if err != nil {
 		log.Errorf("Error creating the config. err: %s", err)
 		os.Exit(1)
 	}
 
-	exporter, err := collector.NewExporter(c.ArtiScrapeURI, *c.Credentials, c.AuthMethod, c.ArtiSSLVerify, c.ArtiTimeout, c.Logger)
+	exporter, err := collector.NewExporter(conf)
 	if err != nil {
-		level.Error(c.Logger).Log("msg", "Error creating an exporter", "err", err)
+		level.Error(conf.Logger).Log("msg", "Error creating an exporter", "err", err)
 		os.Exit(1)
 	}
 	prometheus.MustRegister(exporter)
 
-	level.Info(c.Logger).Log("msg", "Listening on address", "address", c.ListenAddress)
-	http.Handle(c.MetricsPath, promhttp.Handler())
+	level.Info(conf.Logger).Log("msg", "Listening on address", "address", conf.ListenAddress)
+	http.Handle(conf.MetricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
-             <head><title>JFrog Exporter</title></head>
+             <head><title>JFrog Artifactory Exporter</title></head>
              <body>
              <h1>JFrog Exporter</h1>
-             <p><a href='` + c.MetricsPath + `'>Metrics</a></p>
+             <p><a href='` + conf.MetricsPath + `'>Metrics</a></p>
              </body>
              </html>`))
 	})
-	if err := http.ListenAndServe(c.ListenAddress, nil); err != nil {
-		level.Error(c.Logger).Log("msg", "Error starting HTTP server", "err", err)
+	if err := http.ListenAndServe(conf.ListenAddress, nil); err != nil {
+		level.Error(conf.Logger).Log("msg", "Error starting HTTP server", "err", err)
 		os.Exit(1)
 	}
 }

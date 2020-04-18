@@ -86,14 +86,14 @@ type Exporter struct {
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration, logger log.Logger) (*Exporter, error) {
+func NewExporter(conf *config.Config) (*Exporter, error) {
 
 	return &Exporter{
-		URI:        uri,
-		cred:       cred,
-		authMethod: authMethod,
-		sslVerify:  sslVerify,
-		timeout:    timeout,
+		URI:        conf.ArtiScrapeURI,
+		cred:       *conf.Credentials,
+		authMethod: conf.Credentials.AuthMethod,
+		sslVerify:  conf.ArtiSSLVerify,
+		timeout:    conf.ArtiTimeout,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",
@@ -109,7 +109,7 @@ func NewExporter(uri string, cred config.Credentials, authMethod string, sslVeri
 			Name:      "exporter_json_parse_failures",
 			Help:      "Number of errors while parsing Json.",
 		}),
-		logger: logger,
+		logger: conf.Logger,
 	}, nil
 }
 

@@ -23,6 +23,7 @@ var (
 // Credentials represents Username and Password or API Key for
 // Artifactory Authentication
 type Credentials struct {
+	AuthMethod  string
 	Username    string `required:"false" envconfig:"ARTI_USERNAME"`
 	Password    string `required:"false" envconfig:"ARTI_PASSWORD"`
 	AccessToken string `required:"false" envconfig:"ARTI_ACCESS_TOKEN"`
@@ -34,7 +35,6 @@ type Config struct {
 	MetricsPath   string
 	ArtiScrapeURI string
 	Credentials   *Credentials
-	AuthMethod    string
 	ArtiSSLVerify bool
 	ArtiTimeout   time.Duration
 	Logger        log.Logger
@@ -50,36 +50,31 @@ func NewConfig() (*Config, error) {
 	logger := promlog.New(promlogConfig)
 
 	var credentials Credentials
-	var authMethod string
 	err := envconfig.Process("", &credentials)
 	if err != nil {
 		return nil, err
 	}
 	if credentials.Username != "" && credentials.Password != "" && credentials.AccessToken == "" {
-		authMethod = "userPass"
+		credentials.AuthMethod = "userPass"
 	} else if credentials.Username == "" && credentials.Password == "" && credentials.AccessToken != "" {
-		authMethod = "accessToken"
+		credentials.AuthMethod = "accessToken"
 	} else {
-		return nil, fmt.Errorf("`ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variable hast to be set.")
+		return nil, fmt.Errorf("`ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variable hast to be set")
 	}
 
-	u, err := url.Parse(*artiScrapeURI)
+	_, err = url.Parse(*artiScrapeURI)
 	if err != nil {
 		return nil, err
 	}
 
-	switch u.Scheme {
-	case "http", "https":
-		return &Config{
-			*listenAddress,
-			*metricsPath,
-			*artiScrapeURI,
-			&credentials,
-			authMethod,
-			*artiSSLVerify,
-			*artiTimeout,
-			logger,
-		}, nil
-	}
-	return nil, err
+	return &Config{
+		ListenAddress: *listenAddress,
+		MetricsPath:   *metricsPath,
+		ArtiScrapeURI: *artiScrapeURI,
+		Credentials:   &credentials,
+		ArtiSSLVerify: *artiSSLVerify,
+		ArtiTimeout:   *artiTimeout,
+		Logger:        logger,
+	}, nil
+
 }
