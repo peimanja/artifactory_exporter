@@ -3,8 +3,6 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
@@ -52,21 +50,6 @@ func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
 		return storageInfo, err
 	}
 	return storageInfo, nil
-}
-
-func (e *Exporter) removeCommas(str string) (float64, error) {
-	level.Debug(e.logger).Log("msg", "Removing other characters to extract number from string")
-	reg, err := regexp.Compile("[^0-9.]+")
-	if err != nil {
-		return 0, err
-	}
-	strArray := strings.Fields(str)
-	convertedStr, err := strconv.ParseFloat(reg.ReplaceAllString(strArray[0], ""), 64)
-	if err != nil {
-		return 0, err
-	}
-	level.Debug(e.logger).Log("msg", "Successfully converted string to number", "string", str, "number", convertedStr)
-	return convertedStr, nil
 }
 
 func (e *Exporter) bytesConverter(str string) (float64, error) {

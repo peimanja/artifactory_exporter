@@ -57,10 +57,3 @@ func (e *Exporter) exportReplications(replications []replication, ch chan<- prom
 		}
 	}
 }
-
-func b2f(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
-}

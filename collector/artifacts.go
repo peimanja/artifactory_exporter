@@ -1,54 +1,12 @@
 package collector
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-func (e *Exporter) queryAQL(query []byte) ([]byte, error) {
-	fullPath := fmt.Sprintf("%s/api/search/aql", e.URI)
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !e.sslVerify}}
-	client := http.Client{
-		Timeout:   e.timeout,
-		Transport: tr,
-	}
-	level.Debug(e.logger).Log("msg", "Running AQL query", "path", fullPath)
-	req, err := http.NewRequest("POST", fullPath, bytes.NewBuffer(query))
-	req.Header = http.Header{"Content-Type": {"text/plain"}}
-	if err != nil {
-		return nil, err
-	}
-
-	if e.authMethod == "userPass" {
-		req.SetBasicAuth(e.cred.Username, e.cred.Password)
-	} else if e.authMethod == "accessToken" {
-		req.Header.Add("Authorization", "Bearer "+e.cred.AccessToken)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return bodyBytes, nil
-
-}
 
 type artifact struct {
 	Repo string `json:"repo,omitempty"`
