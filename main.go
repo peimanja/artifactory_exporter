@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	conf, err := config.NewConfig()
 	if err != nil {
 		log.Errorf("Error creating the config. err: %s", err)

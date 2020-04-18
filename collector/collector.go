@@ -238,24 +238,18 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	// Some API endpoints are not available in OSS
 	if licenseType != "oss" {
-		// Fetch Security stats
-		users, err := e.fetchUsers()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/users", "err", err)
-			return 0
-		}
-		groups, err := e.fetchGroups()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/groups", "err", err)
-			return 0
-		}
-
 		for metricName, metric := range securityMetrics {
 			switch metricName {
 			case "users":
-				e.countUsers(metricName, metric, users, ch)
+				err := e.exportUsersCount(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
 			case "groups":
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
+				err := e.exportGroups(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
 			}
 		}
 
