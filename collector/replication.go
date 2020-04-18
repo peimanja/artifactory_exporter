@@ -37,10 +37,16 @@ func (e *Exporter) fetchReplications() ([]replication, error) {
 	return replications, nil
 }
 
-func (e *Exporter) exportReplications(replications []replication, ch chan<- prometheus.Metric) {
+func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
+	// Fetch Replications stats
+	replications, err := e.fetchReplications()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching replications", "err", err)
+		return err
+	}
 	if len(replications) == 0 {
 		level.Debug(e.logger).Log("msg", "No replications stats found")
-		return
+		return nil
 	}
 	for _, replication := range replications {
 		for metricName, metric := range replicationMetrics {
@@ -56,4 +62,5 @@ func (e *Exporter) exportReplications(replications []replication, ch chan<- prom
 			}
 		}
 	}
+	return nil
 }

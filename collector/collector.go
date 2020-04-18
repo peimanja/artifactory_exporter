@@ -114,6 +114,28 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
+	// Some API endpoints are not available in OSS
+	if licenseType != "oss" {
+		for metricName, metric := range securityMetrics {
+			switch metricName {
+			case "users":
+				err := e.exportUsersCount(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
+			case "groups":
+				err := e.exportGroups(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
+			}
+		}
+		err = e.exportReplications(ch)
+		if err != nil {
+			return 0
+		}
+	}
+
 	healthy, err := e.fetchHealth()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/ping", "err", err)
@@ -189,33 +211,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		return 0
 	}
 	e.exportArtifacts(repoSummaryList, ch)
-
-	// Some API endpoints are not available in OSS
-	if licenseType != "oss" {
-		for metricName, metric := range securityMetrics {
-			switch metricName {
-			case "users":
-				err := e.exportUsersCount(metricName, metric, ch)
-				if err != nil {
-					return 0
-				}
-			case "groups":
-				err := e.exportGroups(metricName, metric, ch)
-				if err != nil {
-					return 0
-				}
-			}
-		}
-
-		// Fetch Replications stats
-		replications, err := e.fetchReplications()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching replications", "err", err)
-			return 0
-		}
-
-		e.exportReplications(replications, ch)
-	}
 
 	return 1
 }
