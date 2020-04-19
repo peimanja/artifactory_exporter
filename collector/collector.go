@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 )
 
 const (
@@ -61,9 +62,12 @@ var (
 		"downloaded5m":  newMetric("downloaded_5m", "artifacts", "Number of artifacts downloaded from the repository in the last 5 minutes.", repoLabelNames),
 		"downloaded15m": newMetric("downloaded_15m", "artifacts", "Number of artifacts downloaded from the repository in the last 15 minutes.", repoLabelNames),
 	}
-
-	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
 )
+
+func init() {
+	version.Version = "1.1.1"
+	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
+}
 
 // Describe describes all the metrics ever exported by the Artifactory exporter. It
 // implements prometheus.Collector.
@@ -83,7 +87,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range artifactsMetrics {
 		ch <- m
 	}
-	ch <- artifactoryUp
+	ch <- e.up.Desc()
 	ch <- e.totalScrapes.Desc()
 	ch <- e.totalAPIErrors.Desc()
 	ch <- e.jsonParseFailures.Desc()
@@ -96,8 +100,9 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.Unlock()
 
 	up := e.scrape(ch)
+	ch <- e.up
+	e.up.Set(up)
 
-	ch <- prometheus.MustNewConstMetric(artifactoryUp, prometheus.GaugeValue, up)
 	ch <- e.totalScrapes
 	ch <- e.totalAPIErrors
 	ch <- e.jsonParseFailures

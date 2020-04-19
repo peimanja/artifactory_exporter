@@ -84,6 +84,7 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | ------ | ----------- | ------ | ------ |
 | artifactory_up | Was the last scrape of Artifactory successful. |  | &#9989; |
 | artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  | &#9989; |
+| artifactory_exporter_total_api_errors | Current total Artifactory API errors when scraping for stats. |  | &#9989; |
 | artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  | &#9989; |
 | artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp` | |
 | artifactory_security_groups | Number of Artifactory groups. | | |

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -36,6 +37,14 @@ func main() {
              <p><a href='` + conf.MetricsPath + `'>Metrics</a></p>
              </body>
              </html>`))
+	})
+	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "OK")
+	})
+	http.HandleFunc("/-/ready", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "OK")
 	})
 	if err := http.ListenAndServe(conf.ListenAddress, nil); err != nil {
 		level.Error(conf.Logger).Log("msg", "Error starting HTTP server", "err", err)
