@@ -26,7 +26,11 @@ func (c *Client) FetchUsers() ([]User, error) {
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &users); err != nil {
-		return users, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal users respond")
+		return users, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: usersEndpoint,
+		}
 	}
 	return users, nil
 }
@@ -46,8 +50,11 @@ func (c *Client) FetchGroups() ([]Group, error) {
 		return groups, err
 	}
 	if err := json.Unmarshal(resp, &groups); err != nil {
-		level.Error(c.logger).Log("err", "There was an issue getting groups respond")
-		return groups, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal groups respond")
+		return groups, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: groupsEndpoint,
+		}
 	}
 
 	return groups, nil

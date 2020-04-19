@@ -10,8 +10,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-// APIError represents Artifactory API Error response
-type APIError struct {
+// APIErrors represents Artifactory API Error response
+type APIErrors struct {
 	Errors []struct {
 		Status  int    `json:"status,omitempty"`
 		Message string `json:"message,omitempty"`
@@ -40,11 +40,15 @@ func (c *Client) fetchHTTP(path string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		var apiError APIError
+		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bodyBytes, &apiError)
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiError.Errors[0].Message, "status", apiError.Errors[0].Status)
-		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+		json.Unmarshal(bodyBytes, &apiErrors)
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
+		return nil, &APIError{
+			message:  apiErrors.Errors[0].Message,
+			endpoint: fullPath,
+			status:   apiErrors.Errors[0].Status,
+		}
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -78,11 +82,15 @@ func (c *Client) queryAQL(query []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		var apiError APIError
+		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bodyBytes, &apiError)
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiError.Errors[0].Message, "status", apiError.Errors[0].Status)
-		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+		json.Unmarshal(bodyBytes, &apiErrors)
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
+		return nil, &APIError{
+			message:  apiErrors.Errors[0].Message,
+			endpoint: fullPath,
+			status:   apiErrors.Errors[0].Status,
+		}
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)

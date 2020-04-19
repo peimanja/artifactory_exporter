@@ -18,7 +18,7 @@ type Client struct {
 }
 
 // NewClient returns an initialized Artifactory HTTP Client.
-func NewClient(conf *config.Config) (*Client, error) {
+func NewClient(conf *config.Config) *Client {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !conf.ArtiSSLVerify}}
 	client := &http.Client{
 		Timeout:   conf.ArtiTimeout,
@@ -30,5 +30,5 @@ func NewClient(conf *config.Config) (*Client, error) {
 		cred:       *conf.Credentials,
 		client:     client,
 		logger:     conf.Logger,
-	}, nil
+	}
 }

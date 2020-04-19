@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/go-kit/kit/log"
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/peimanja/artifactory_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -13,6 +14,7 @@ import (
 // Exporter collects JFrog Artifactory stats from the given URI and
 // exports them using the prometheus metrics package.
 type Exporter struct {
+	c          *artifactory.Client
 	URI        string
 	authMethod string
 	cred       config.Credentials
@@ -26,12 +28,14 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(conf *config.Config) (*Exporter, error) {
+	c := artifactory.NewClient(conf)
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !conf.ArtiSSLVerify}}
 	client := &http.Client{
 		Timeout:   conf.ArtiTimeout,
 		Transport: tr,
 	}
 	return &Exporter{
+		c:          c,
 		URI:        conf.ArtiScrapeURI,
 		cred:       *conf.Credentials,
 		client:     client,

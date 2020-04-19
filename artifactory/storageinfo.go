@@ -48,8 +48,11 @@ func (c *Client) FetchStorageInfo() (StorageInfo, error) {
 		return storageInfo, err
 	}
 	if err := json.Unmarshal(resp, &storageInfo); err != nil {
-		level.Error(c.logger).Log("err", "There was an issue getting storageInfo respond")
-		return storageInfo, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal storageInfo respond")
+		return storageInfo, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: storageInfoEndpoint,
+		}
 	}
 	return storageInfo, nil
 }

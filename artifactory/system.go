@@ -44,8 +44,11 @@ func (c *Client) FetchBuildInfo() (BuildInfo, error) {
 		return buildInfo, err
 	}
 	if err := json.Unmarshal(resp, &buildInfo); err != nil {
-		level.Debug(c.logger).Log("msg", "There was an issue getting builds respond")
-		return buildInfo, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal buildInfo respond")
+		return buildInfo, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: versionEndpoint,
+		}
 	}
 	return buildInfo, nil
 }
@@ -66,8 +69,11 @@ func (c *Client) FetchLicense() (LicenseInfo, error) {
 		return licenseInfo, err
 	}
 	if err := json.Unmarshal(resp, &licenseInfo); err != nil {
-		level.Debug(c.logger).Log("msg", "There was an issue getting license respond")
-		return licenseInfo, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal licenseInfo respond")
+		return licenseInfo, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: licenseEndpoint,
+		}
 	}
 	return licenseInfo, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,26 +14,12 @@ type user struct {
 	Realm string `json:"realm"`
 }
 
-func (e *Exporter) fetchUsers() ([]user, error) {
-	var users []user
-	level.Debug(e.logger).Log("msg", "Fetching users stats")
-	resp, err := e.fetchHTTP("security/users")
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(resp, &users); err != nil {
-		e.jsonParseFailures.Inc()
-		return users, err
-	}
-	return users, nil
-}
-
 type usersCount struct {
 	count float64
 	realm string
 }
 
-func (e *Exporter) countUsers(users []user) []usersCount {
+func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
 	level.Debug(e.logger).Log("msg", "Counting users")
 	userCount := []usersCount{
 		{0, "saml"},
@@ -52,7 +39,7 @@ func (e *Exporter) countUsers(users []user) []usersCount {
 
 func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
 	// Fetch Security stats
-	users, err := e.fetchUsers()
+	users, err := e.c.FetchUsers()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
 		return err

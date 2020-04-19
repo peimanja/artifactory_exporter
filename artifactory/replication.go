@@ -32,8 +32,11 @@ func (c *Client) FetchReplications() ([]Replication, error) {
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &replications); err != nil {
-		level.Warn(c.logger).Log("msg", "There was an issue getting replication respond")
-		return replications, err
+		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal replication respond")
+		return replications, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: replicationEndpoint,
+		}
 	}
 	return replications, nil
 }
