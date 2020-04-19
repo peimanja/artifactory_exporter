@@ -25,12 +25,12 @@ type replication struct {
 func (e *Exporter) fetchReplications() ([]replication, error) {
 	var replications []replication
 	level.Debug(e.logger).Log("msg", "Fetching replications stats")
-	resp, err := e.fetchHTTP(e.URI, "replications", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	resp, err := e.fetchHTTP("replications")
 	if err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &replications); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting replication respond")
+		level.Warn(e.logger).Log("msg", "There was an issue getting replication respond")
 		e.jsonParseFailures.Inc()
 		return replications, err
 	}

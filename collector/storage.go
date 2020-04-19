@@ -39,12 +39,12 @@ type storageInfo struct {
 func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
 	var storageInfo storageInfo
 	level.Debug(e.logger).Log("msg", "Fetching storage info stats")
-	resp, err := e.fetchHTTP(e.URI, "storageinfo", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	resp, err := e.fetchHTTP("storageinfo")
 	if err != nil {
 		return storageInfo, err
 	}
 	if err := json.Unmarshal(resp, &storageInfo); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting storageInfo respond")
+		level.Error(e.logger).Log("err", "There was an issue getting storageInfo respond")
 		e.jsonParseFailures.Inc()
 		return storageInfo, err
 	}
@@ -59,7 +59,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 	value, err := e.removeCommas(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
@@ -74,7 +74,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)

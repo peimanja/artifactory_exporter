@@ -16,7 +16,7 @@ type user struct {
 func (e *Exporter) fetchUsers() ([]user, error) {
 	var users []user
 	level.Debug(e.logger).Log("msg", "Fetching users stats")
-	resp, err := e.fetchHTTP(e.URI, "security/users", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	resp, err := e.fetchHTTP("security/users")
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 
 	if usersCount[0].count == 0 && usersCount[1].count == 0 {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue getting users respond")
+		level.Error(e.logger).Log("err", "There was an issue getting users respond")
 		return fmt.Errorf("There was an issue getting users respond")
 	}
 	for _, user := range usersCount {
@@ -81,12 +81,12 @@ type group struct {
 func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
 	var groups []group
 	level.Debug(e.logger).Log("msg", "Fetching groups stats")
-	resp, err := e.fetchHTTP(e.URI, "security/groups", e.cred, e.authMethod, e.sslVerify, e.timeout)
+	resp, err := e.fetchHTTP("security/groups")
 	if err != nil {
 		return err
 	}
 	if err := json.Unmarshal(resp, &groups); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting groups respond")
+		level.Error(e.logger).Log("err", "There was an issue getting groups respond")
 		e.jsonParseFailures.Inc()
 		return err
 	}

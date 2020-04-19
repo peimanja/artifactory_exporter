@@ -3,7 +3,6 @@ package collector
 import (
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -86,6 +85,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	}
 	ch <- artifactoryUp
 	ch <- e.totalScrapes.Desc()
+	ch <- e.totalAPIErrors.Desc()
 	ch <- e.jsonParseFailures.Desc()
 }
 
@@ -99,6 +99,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(artifactoryUp, prometheus.GaugeValue, up)
 	ch <- e.totalScrapes
+	ch <- e.totalAPIErrors
 	ch <- e.jsonParseFailures
 }
 
@@ -109,7 +110,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	var licenseType string
 	license, err := e.fetchLicense()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/license", "err", err)
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
@@ -144,7 +144,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	// Fetch Storage Info stats and register them
 	storageInfo, err := e.fetchStorageInfo()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching storageinfo", "err", err)
 		return 0
 	}
 	e.exportStorage(storageInfo, ch)

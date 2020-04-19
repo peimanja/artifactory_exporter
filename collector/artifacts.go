@@ -27,17 +27,17 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 	case "downloaded":
 		query = fmt.Sprintf("items.find({\"stat.downloaded\" : {\"$last\" : \"%s\"}}).include(\"name\", \"repo\")", period)
 	default:
-		level.Error(e.logger).Log("msg", "Query Type is not supported", "query", queryType)
+		level.Error(e.logger).Log("err", "Query Type is not supported", "query", queryType)
 		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
 	}
 	resp, err := e.queryAQL([]byte(query))
 	if err != nil {
-		level.Error(e.logger).Log("msg", "There was an error finding artifacts", "queryType", queryType, "period", period, "error", err)
+		level.Error(e.logger).Log("err", "There was an error finding artifacts", "queryType", queryType, "period", period, "error", err)
 		return artifacts, err
 	}
 
 	if err := json.Unmarshal(resp, &artifacts); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue marshaling AQL response")
+		level.Warn(e.logger).Log("msg", "There was an issue marshaling AQL response")
 		e.jsonParseFailures.Inc()
 		return artifacts, err
 	}

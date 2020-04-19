@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"crypto/tls"
+	"net/http"
 	"sync"
 	"time"
 
@@ -13,30 +15,38 @@ import (
 // exports them using the prometheus metrics package.
 type Exporter struct {
 	URI        string
-	cred       config.Credentials
 	authMethod string
-	sslVerify  bool
+	cred       config.Credentials
+	client     *http.Client
 	timeout    time.Duration
 	mutex      sync.RWMutex
 
-	up                              prometheus.Gauge
-	totalScrapes, jsonParseFailures prometheus.Counter
-	logger                          log.Logger
+	up                                              prometheus.Gauge
+	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
+	logger                                          log.Logger
 }
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(conf *config.Config) (*Exporter, error) {
-
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !conf.ArtiSSLVerify}}
+	client := &http.Client{
+		Timeout:   conf.ArtiTimeout,
+		Transport: tr,
+	}
 	return &Exporter{
 		URI:        conf.ArtiScrapeURI,
 		cred:       *conf.Credentials,
+		client:     client,
 		authMethod: conf.Credentials.AuthMethod,
-		sslVerify:  conf.ArtiSSLVerify,
-		timeout:    conf.ArtiTimeout,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",
 			Help:      "Was the last scrape of artifactory successful.",
+		}),
+		totalAPIErrors: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "exporter_total_api_errors",
+			Help:      "Current total API errors.",
 		}),
 		totalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
