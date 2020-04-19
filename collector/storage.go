@@ -2,7 +2,6 @@ package collector
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
@@ -50,34 +49,6 @@ func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
 		return storageInfo, err
 	}
 	return storageInfo, nil
-}
-
-func (e *Exporter) bytesConverter(str string) (float64, error) {
-	type errorString struct {
-		s string
-	}
-	var bytesValue float64
-	level.Debug(e.logger).Log("msg", "Converting size to bytes")
-	num, err := e.removeCommas(str)
-	if err != nil {
-		return 0, err
-	}
-
-	if strings.Contains(str, "bytes") {
-		bytesValue = num
-	} else if strings.Contains(str, "KB") {
-		bytesValue = num * 1024
-	} else if strings.Contains(str, "MB") {
-		bytesValue = num * 1024 * 1024
-	} else if strings.Contains(str, "GB") {
-		bytesValue = num * 1024 * 1024 * 1024
-	} else if strings.Contains(str, "TB") {
-		bytesValue = num * 1024 * 1024 * 1024 * 1024
-	} else {
-		return 0, fmt.Errorf("Could not convert %s to bytes", str)
-	}
-	level.Debug(e.logger).Log("msg", "Successfully converted string to bytes", "string", str, "value", bytesValue)
-	return bytesValue, nil
 }
 
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, ch chan<- prometheus.Metric) {
@@ -198,6 +169,29 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.Percentage)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.Percentage, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			}
+		}
+	}
+}
+
+func (e *Exporter) exportStorage(storageInfo storageInfo, ch chan<- prometheus.Metric) {
+	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
+	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
+	for metricName, metric := range storageMetrics {
+		switch metricName {
+		case "artifacts":
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ArtifactsCount, ch)
+		case "artifactsSize":
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.ArtifactsSize, ch)
+		case "binaries":
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.BinariesCount, ch)
+		case "binariesSize":
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.BinariesSize, ch)
+		case "filestore":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
+		case "filestoreUsed":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
+		case "filestoreFree":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
 		}
 	}
 }

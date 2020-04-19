@@ -2,8 +2,11 @@ package collector
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func (e *Exporter) fetchHealth() (float64, error) {
@@ -59,4 +62,43 @@ func (e *Exporter) fetchLicense() (licenseInfo, error) {
 		return licenseInfo, err
 	}
 	return licenseInfo, nil
+}
+
+func (e *Exporter) exportSystem(license licenseInfo, ch chan<- prometheus.Metric) error {
+	healthy, err := e.fetchHealth()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/ping", "err", err)
+		return err
+	}
+	buildInfo, err := e.fetchBuildInfo()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/version", "err", err)
+		return err
+	}
+
+	licenseType := strings.ToLower(license.Type)
+	for metricName, metric := range systemMetrics {
+		switch metricName {
+		case "healthy":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
+		case "version":
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
+		case "license":
+			var validThrough float64
+			timeNow := float64(time.Now().Unix())
+			switch licenseType {
+			case "oss":
+				validThrough = timeNow
+			default:
+				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
+					level.Warn(e.logger).Log("msg", "Couldn't parse Artifactory license ValidThrough", "err", err)
+					validThrough = timeNow
+				} else {
+					validThrough = float64(validThroughTime.Unix())
+				}
+			}
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, licenseType, license.LicensedTo, license.ValidThrough)
+		}
+	}
+	return nil
 }

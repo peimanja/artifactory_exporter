@@ -2,7 +2,6 @@ package collector
 
 import (
 	"strings"
-	"time"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
@@ -106,11 +105,11 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
-	// Fetch System stats
+	// Collect License info
 	var licenseType string
 	license, err := e.fetchLicense()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/license", "err", err)
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/license", "err", err)
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
@@ -136,67 +135,19 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		}
 	}
 
-	healthy, err := e.fetchHealth()
+	// Collect and export system metrics
+	err = e.exportSystem(license, ch)
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/ping", "err", err)
-		return 0
-	}
-	buildInfo, err := e.fetchBuildInfo()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/version", "err", err)
 		return 0
 	}
 
-	for metricName, metric := range systemMetrics {
-		switch metricName {
-		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
-		case "version":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
-		case "license":
-			var validThrough float64
-			timeNow := float64(time.Now().Unix())
-			switch licenseType {
-			case "oss":
-				validThrough = timeNow
-			default:
-				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
-					level.Warn(e.logger).Log("msg", "Can't parse Artifactory license ValidThrough", "err", err)
-					validThrough = timeNow
-				} else {
-					validThrough = float64(validThroughTime.Unix())
-				}
-			}
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, licenseType, license.LicensedTo, license.ValidThrough)
-		}
-	}
-
-	// Fetch Storage Info stats
+	// Fetch Storage Info stats and register them
 	storageInfo, err := e.fetchStorageInfo()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching storageinfo", "err", err)
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching storageinfo", "err", err)
 		return 0
 	}
-	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
-	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
-	for metricName, metric := range storageMetrics {
-		switch metricName {
-		case "artifacts":
-			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ArtifactsCount, ch)
-		case "artifactsSize":
-			e.exportSize(metricName, metric, storageInfo.BinariesSummary.ArtifactsSize, ch)
-		case "binaries":
-			e.exportCount(metricName, metric, storageInfo.BinariesSummary.BinariesCount, ch)
-		case "binariesSize":
-			e.exportSize(metricName, metric, storageInfo.BinariesSummary.BinariesSize, ch)
-		case "filestore":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
-		case "filestoreUsed":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
-		case "filestoreFree":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
-		}
-	}
+	e.exportStorage(storageInfo, ch)
 
 	// Extract repo summaries from storageInfo and register them
 	repoSummaryList, err := e.extractRepo(storageInfo)
