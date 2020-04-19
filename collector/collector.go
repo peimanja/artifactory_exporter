@@ -108,8 +108,9 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	// Collect License info
 	var licenseType string
-	license, err := e.fetchLicense()
+	license, err := e.client.FetchLicense()
 	if err != nil {
+		e.totalAPIErrors.Inc()
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
@@ -142,8 +143,9 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	}
 
 	// Fetch Storage Info stats and register them
-	storageInfo, err := e.fetchStorageInfo()
+	storageInfo, err := e.client.FetchStorageInfo()
 	if err != nil {
+		e.totalAPIErrors.Inc()
 		return 0
 	}
 	e.exportStorage(storageInfo, ch)

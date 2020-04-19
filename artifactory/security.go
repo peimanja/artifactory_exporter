@@ -21,7 +21,7 @@ type User struct {
 func (c *Client) FetchUsers() ([]User, error) {
 	var users []User
 	level.Debug(c.logger).Log("msg", "Fetching users stats")
-	resp, err := c.fetchHTTP(usersEndpoint)
+	resp, err := c.FetchHTTP(usersEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ type Group struct {
 func (c *Client) FetchGroups() ([]Group, error) {
 	var groups []Group
 	level.Debug(c.logger).Log("msg", "Fetching groups stats")
-	resp, err := c.fetchHTTP(groupsEndpoint)
+	resp, err := c.FetchHTTP(groupsEndpoint)
 	if err != nil {
 		return groups, err
 	}

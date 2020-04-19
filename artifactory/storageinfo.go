@@ -43,7 +43,7 @@ type StorageInfo struct {
 func (c *Client) FetchStorageInfo() (StorageInfo, error) {
 	var storageInfo StorageInfo
 	level.Debug(c.logger).Log("msg", "Fetching storage info stats")
-	resp, err := c.fetchHTTP(storageInfoEndpoint)
+	resp, err := c.FetchHTTP(storageInfoEndpoint)
 	if err != nil {
 		return storageInfo, err
 	}

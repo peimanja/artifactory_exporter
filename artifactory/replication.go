@@ -27,7 +27,7 @@ type Replication struct {
 func (c *Client) FetchReplications() ([]Replication, error) {
 	var replications []Replication
 	level.Debug(c.logger).Log("msg", "Fetching replications stats")
-	resp, err := c.fetchHTTP(replicationEndpoint)
+	resp, err := c.FetchHTTP(replicationEndpoint)
 	if err != nil {
 		return nil, err
 	}

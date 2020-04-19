@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/go-kit/kit/log/level"
@@ -38,10 +37,11 @@ func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
 }
 
 func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
-	// Fetch Security stats
-	users, err := e.c.FetchUsers()
+	// Fetch Artifactory Users
+	users, err := e.client.FetchUsers()
 	if err != nil {
 		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.totalAPIErrors.Inc()
 		return err
 	}
 
@@ -66,19 +66,14 @@ type group struct {
 }
 
 func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
-	var groups []group
-	level.Debug(e.logger).Log("msg", "Fetching groups stats")
-	resp, err := e.fetchHTTP("security/groups")
+	// Fetch Artifactory groups
+	groups, err := e.client.FetchGroups()
 	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(resp, &groups); err != nil {
-		level.Error(e.logger).Log("err", "There was an issue getting groups respond")
-		e.jsonParseFailures.Inc()
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.totalAPIErrors.Inc()
 		return err
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", float64(len(groups)))
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
-
 	return nil
 }

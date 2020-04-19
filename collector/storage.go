@@ -1,55 +1,12 @@
 package collector
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-type storageInfo struct {
-	BinariesSummary struct {
-		BinariesCount  string `json:"binariesCount"`
-		BinariesSize   string `json:"binariesSize"`
-		ArtifactsSize  string `json:"artifactsSize"`
-		Optimization   string `json:"optimization"`
-		ItemsCount     string `json:""`
-		ArtifactsCount string `json:"artifactsCount"`
-	} `json:"binariesSummary"`
-	FileStoreSummary struct {
-		StorageType      string `json:"storageType"`
-		StorageDirectory string `json:"storageDirectory"`
-		TotalSpace       string `json:"totalSpace"`
-		UsedSpace        string `json:"usedSpace"`
-		FreeSpace        string `json:"freeSpace"`
-	} `json:"fileStoreSummary"`
-	RepositoriesSummaryList []struct {
-		RepoKey      string `json:"repoKey"`
-		RepoType     string `json:"repoType"`
-		FoldersCount int    `json:"foldersCount"`
-		FilesCount   int    `json:"filesCount"`
-		UsedSpace    string `json:"usedSpace"`
-		ItemsCount   int    `json:"itemsCount"`
-		PackageType  string `json:"packageType"`
-		Percentage   string `json:"percentage"`
-	} `json:"repositoriesSummaryList"`
-}
-
-func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
-	var storageInfo storageInfo
-	level.Debug(e.logger).Log("msg", "Fetching storage info stats")
-	resp, err := e.fetchHTTP("storageinfo")
-	if err != nil {
-		return storageInfo, err
-	}
-	if err := json.Unmarshal(resp, &storageInfo); err != nil {
-		level.Error(e.logger).Log("err", "There was an issue getting storageInfo respond")
-		e.jsonParseFailures.Inc()
-		return storageInfo, err
-	}
-	return storageInfo, nil
-}
 
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, ch chan<- prometheus.Metric) {
 	if count == "" {
@@ -113,7 +70,7 @@ type repoSummary struct {
 	TotalDownloaded15m float64
 }
 
-func (e *Exporter) extractRepo(storageInfo storageInfo) ([]repoSummary, error) {
+func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSummary, error) {
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
@@ -173,7 +130,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 	}
 }
 
-func (e *Exporter) exportStorage(storageInfo storageInfo, ch chan<- prometheus.Metric) {
+func (e *Exporter) exportStorage(storageInfo artifactory.StorageInfo, ch chan<- prometheus.Metric) {
 	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
 	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
 	for metricName, metric := range storageMetrics {

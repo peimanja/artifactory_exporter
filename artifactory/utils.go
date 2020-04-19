@@ -18,7 +18,8 @@ type APIErrors struct {
 	} `json:"errors,omitempty"`
 }
 
-func (c *Client) fetchHTTP(path string) ([]byte, error) {
+// FetchHTTP is a wrapper function for making all Get API calls
+func (c *Client) FetchHTTP(path string) ([]byte, error) {
 	fullPath := fmt.Sprintf("%s/api/%s", c.URI, path)
 	level.Debug(c.logger).Log("msg", "Fetching http", "path", fullPath)
 	req, err := http.NewRequest("GET", fullPath, nil)
@@ -42,7 +43,13 @@ func (c *Client) fetchHTTP(path string) ([]byte, error) {
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bodyBytes, &apiErrors)
+		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
+			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
+			return nil, &UnmarshalError{
+				message:  err.Error(),
+				endpoint: fullPath,
+			}
+		}
 		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
 		return nil, &APIError{
 			message:  apiErrors.Errors[0].Message,
@@ -59,7 +66,8 @@ func (c *Client) fetchHTTP(path string) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-func (c *Client) queryAQL(query []byte) ([]byte, error) {
+// QueryAQL is a wrapper function for making an query to AQL endpoint
+func (c *Client) QueryAQL(query []byte) ([]byte, error) {
 	fullPath := fmt.Sprintf("%s/api/search/aql", c.URI)
 	level.Debug(c.logger).Log("msg", "Running AQL query", "path", fullPath)
 	req, err := http.NewRequest("POST", fullPath, bytes.NewBuffer(query))
@@ -84,7 +92,12 @@ func (c *Client) queryAQL(query []byte) ([]byte, error) {
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bodyBytes, &apiErrors)
+		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
+			return nil, &UnmarshalError{
+				message:  err.Error(),
+				endpoint: fullPath,
+			}
+		}
 		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
 		return nil, &APIError{
 			message:  apiErrors.Errors[0].Message,

@@ -1,8 +1,6 @@
 package collector
 
 import (
-	"crypto/tls"
-	"net/http"
 	"sync"
 
 	"github.com/go-kit/kit/log"
@@ -14,12 +12,8 @@ import (
 // Exporter collects JFrog Artifactory stats from the given URI and
 // exports them using the prometheus metrics package.
 type Exporter struct {
-	c          *artifactory.Client
-	URI        string
-	authMethod string
-	cred       config.Credentials
-	client     *http.Client
-	mutex      sync.RWMutex
+	client *artifactory.Client
+	mutex  sync.RWMutex
 
 	up                                              prometheus.Gauge
 	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
@@ -28,18 +22,9 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(conf *config.Config) (*Exporter, error) {
-	c := artifactory.NewClient(conf)
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !conf.ArtiSSLVerify}}
-	client := &http.Client{
-		Timeout:   conf.ArtiTimeout,
-		Transport: tr,
-	}
+	client := artifactory.NewClient(conf)
 	return &Exporter{
-		c:          c,
-		URI:        conf.ArtiScrapeURI,
-		cred:       *conf.Credentials,
-		client:     client,
-		authMethod: conf.Credentials.AuthMethod,
+		client: client,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",

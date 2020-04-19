@@ -30,14 +30,13 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 		level.Error(e.logger).Log("err", "Query Type is not supported", "query", queryType)
 		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
 	}
-	resp, err := e.queryAQL([]byte(query))
+	resp, err := e.client.QueryAQL([]byte(query))
 	if err != nil {
-		level.Error(e.logger).Log("err", "There was an error finding artifacts", "queryType", queryType, "period", period, "error", err)
+		e.totalAPIErrors.Inc()
 		return artifacts, err
 	}
-
 	if err := json.Unmarshal(resp, &artifacts); err != nil {
-		level.Warn(e.logger).Log("msg", "There was an issue marshaling AQL response")
+		level.Warn(e.logger).Log("msg", "There was an error when trying to unmarshal AQL response", "queryType", queryType, "period", period, "error", err)
 		e.jsonParseFailures.Inc()
 		return artifacts, err
 	}

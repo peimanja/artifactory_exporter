@@ -15,7 +15,7 @@ const (
 // FetchHealth returns true if the ping endpoint returns "OK"
 func (c *Client) FetchHealth() (bool, error) {
 	level.Debug(c.logger).Log("msg", "Fetching health stats")
-	resp, err := c.fetchHTTP(pingEndpoint)
+	resp, err := c.FetchHTTP(pingEndpoint)
 	if err != nil {
 		return false, err
 	}
@@ -39,7 +39,7 @@ type BuildInfo struct {
 func (c *Client) FetchBuildInfo() (BuildInfo, error) {
 	var buildInfo BuildInfo
 	level.Debug(c.logger).Log("msg", "Fetching build stats")
-	resp, err := c.fetchHTTP(versionEndpoint)
+	resp, err := c.FetchHTTP(versionEndpoint)
 	if err != nil {
 		return buildInfo, err
 	}
@@ -64,7 +64,7 @@ type LicenseInfo struct {
 func (c *Client) FetchLicense() (LicenseInfo, error) {
 	var licenseInfo LicenseInfo
 	level.Debug(c.logger).Log("msg", "Fetching license stats")
-	resp, err := c.fetchHTTP(licenseEndpoint)
+	resp, err := c.FetchHTTP(licenseEndpoint)
 	if err != nil {
 		return licenseInfo, err
 	}
