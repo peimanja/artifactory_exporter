@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/peimanja/artifactory_exporter/config"
@@ -18,7 +17,6 @@ type Exporter struct {
 	authMethod string
 	cred       config.Credentials
 	client     *http.Client
-	timeout    time.Duration
 	mutex      sync.RWMutex
 
 	up                                              prometheus.Gauge
