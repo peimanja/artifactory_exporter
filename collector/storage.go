@@ -8,6 +8,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const calculateValueError = "There was an issue calculating the value"
+
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, ch chan<- prometheus.Metric) {
 	if count == "" {
 		e.jsonParseFailures.Inc()
@@ -16,7 +18,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 	value, err := e.removeCommas(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Error(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
@@ -31,7 +33,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Error(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
@@ -46,7 +48,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Debug(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "type", fileStoreType, "directory", fileStoreDir, "value", value)

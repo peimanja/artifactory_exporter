@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
+	"github.com/prometheus/common/version"
 )
 
 func main() {
@@ -26,7 +27,8 @@ func main() {
 		os.Exit(1)
 	}
 	prometheus.MustRegister(exporter)
-
+	level.Info(conf.Logger).Log("msg", "Starting artifactory_exporter", "version", version.Info())
+	level.Info(conf.Logger).Log("msg", "Build context", "context", version.BuildContext())
 	level.Info(conf.Logger).Log("msg", "Listening on address", "address", conf.ListenAddress)
 	http.Handle(conf.MetricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

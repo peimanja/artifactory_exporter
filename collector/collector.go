@@ -65,7 +65,6 @@ var (
 )
 
 func init() {
-	version.Version = "1.1.1"
 	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
 }
 
