@@ -1,9 +1,10 @@
 package collector
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -12,26 +13,12 @@ type user struct {
 	Realm string `json:"realm"`
 }
 
-func (e *Exporter) fetchUsers() ([]user, error) {
-	var users []user
-	level.Debug(e.logger).Log("msg", "Fetching users stats")
-	resp, err := e.fetchHTTP(e.URI, "security/users", e.cred, e.authMethod, e.sslVerify, e.timeout)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(resp, &users); err != nil {
-		e.jsonParseFailures.Inc()
-		return users, err
-	}
-	return users, nil
-}
-
 type usersCount struct {
 	count float64
 	realm string
 }
 
-func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users []user, ch chan<- prometheus.Metric) {
+func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
 	level.Debug(e.logger).Log("msg", "Counting users")
 	userCount := []usersCount{
 		{0, "saml"},
@@ -39,25 +26,38 @@ func (e *Exporter) countUsers(metricName string, metric *prometheus.Desc, users 
 	}
 
 	for _, user := range users {
-		if user.Realm == "saml" {
-			userCount[0].count += 1
-		} else if user.Realm == "internal" {
-			userCount[1].count += 1
+		switch user.Realm {
+		case "saml":
+			userCount[0].count++
+		case "internal":
+			userCount[1].count++
 		}
 	}
-	e.exportUsersCount(metricName, metric, userCount, ch)
+	return userCount
 }
 
-func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, users []usersCount, ch chan<- prometheus.Metric) {
-	if users[0].count == 0 && users[1].count == 0 {
-		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue getting users respond")
-		return
+func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
+	// Fetch Artifactory Users
+	users, err := e.client.FetchUsers()
+	if err != nil {
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.totalAPIErrors.Inc()
+		return err
 	}
-	for _, user := range users {
+
+	// Count Users
+	usersCount := e.countUsers(users)
+
+	if usersCount[0].count == 0 && usersCount[1].count == 0 {
+		e.jsonParseFailures.Inc()
+		level.Error(e.logger).Log("err", "There was an issue getting users respond")
+		return fmt.Errorf("There was an issue getting users respond")
+	}
+	for _, user := range usersCount {
 		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", user.realm, "value", user.count)
 		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, user.count, user.realm)
 	}
+	return nil
 }
 
 type group struct {
@@ -65,17 +65,15 @@ type group struct {
 	Realm string `json:"uri"`
 }
 
-func (e *Exporter) fetchGroups() ([]group, error) {
-	var groups []group
-	level.Debug(e.logger).Log("msg", "Fetching groups stats")
-	resp, err := e.fetchHTTP(e.URI, "security/groups", e.cred, e.authMethod, e.sslVerify, e.timeout)
+func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
+	// Fetch Artifactory groups
+	groups, err := e.client.FetchGroups()
 	if err != nil {
-		return nil, err
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.totalAPIErrors.Inc()
+		return err
 	}
-	if err := json.Unmarshal(resp, &groups); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting groups respond")
-		e.jsonParseFailures.Inc()
-		return groups, err
-	}
-	return groups, nil
+	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", float64(len(groups)))
+	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
+	return nil
 }

@@ -1,54 +1,12 @@
 package collector
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-func (e *Exporter) queryAQL(query []byte) ([]byte, error) {
-	fullPath := fmt.Sprintf("%s/api/search/aql", e.URI)
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !e.sslVerify}}
-	client := http.Client{
-		Timeout:   e.timeout,
-		Transport: tr,
-	}
-	level.Debug(e.logger).Log("msg", "Running AQL query", "path", fullPath)
-	req, err := http.NewRequest("POST", fullPath, bytes.NewBuffer(query))
-	req.Header = http.Header{"Content-Type": {"text/plain"}}
-	if err != nil {
-		return nil, err
-	}
-
-	if e.authMethod == "userPass" {
-		req.SetBasicAuth(e.cred.Username, e.cred.Password)
-	} else if e.authMethod == "accessToken" {
-		req.Header.Add("Authorization", "Bearer "+e.cred.AccessToken)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return bodyBytes, nil
-
-}
 
 type artifact struct {
 	Repo string `json:"repo,omitempty"`
@@ -69,17 +27,16 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 	case "downloaded":
 		query = fmt.Sprintf("items.find({\"stat.downloaded\" : {\"$last\" : \"%s\"}}).include(\"name\", \"repo\")", period)
 	default:
-		level.Error(e.logger).Log("msg", "Query Type is not supported", "query", queryType)
+		level.Error(e.logger).Log("err", "Query Type is not supported", "query", queryType)
 		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
 	}
-	resp, err := e.queryAQL([]byte(query))
+	resp, err := e.client.QueryAQL([]byte(query))
 	if err != nil {
-		level.Error(e.logger).Log("msg", "There was an error finding artifacts", "queryType", queryType, "period", period, "error", err)
+		e.totalAPIErrors.Inc()
 		return artifacts, err
 	}
-
 	if err := json.Unmarshal(resp, &artifacts); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue marshaling AQL response")
+		level.Warn(e.logger).Log("msg", "There was an error when trying to unmarshal AQL response", "queryType", queryType, "period", period, "error", err)
 		e.jsonParseFailures.Inc()
 		return artifacts, err
 	}

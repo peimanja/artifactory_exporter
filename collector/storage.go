@@ -1,101 +1,14 @@
 package collector
 
 import (
-	"encoding/json"
-	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type storageInfo struct {
-	BinariesSummary struct {
-		BinariesCount  string `json:"binariesCount"`
-		BinariesSize   string `json:"binariesSize"`
-		ArtifactsSize  string `json:"artifactsSize"`
-		Optimization   string `json:"optimization"`
-		ItemsCount     string `json:""`
-		ArtifactsCount string `json:"artifactsCount"`
-	} `json:"binariesSummary"`
-	FileStoreSummary struct {
-		StorageType      string `json:"storageType"`
-		StorageDirectory string `json:"storageDirectory"`
-		TotalSpace       string `json:"totalSpace"`
-		UsedSpace        string `json:"usedSpace"`
-		FreeSpace        string `json:"freeSpace"`
-	} `json:"fileStoreSummary"`
-	RepositoriesSummaryList []struct {
-		RepoKey      string `json:"repoKey"`
-		RepoType     string `json:"repoType"`
-		FoldersCount int    `json:"foldersCount"`
-		FilesCount   int    `json:"filesCount"`
-		UsedSpace    string `json:"usedSpace"`
-		ItemsCount   int    `json:"itemsCount"`
-		PackageType  string `json:"packageType"`
-		Percentage   string `json:"percentage"`
-	} `json:"repositoriesSummaryList"`
-}
-
-func (e *Exporter) fetchStorageInfo() (storageInfo, error) {
-	var storageInfo storageInfo
-	level.Debug(e.logger).Log("msg", "Fetching storage info stats")
-	resp, err := e.fetchHTTP(e.URI, "storageinfo", e.cred, e.authMethod, e.sslVerify, e.timeout)
-	if err != nil {
-		return storageInfo, err
-	}
-	if err := json.Unmarshal(resp, &storageInfo); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting storageInfo respond")
-		e.jsonParseFailures.Inc()
-		return storageInfo, err
-	}
-	return storageInfo, nil
-}
-
-func (e *Exporter) removeCommas(str string) (float64, error) {
-	level.Debug(e.logger).Log("msg", "Removing other characters to extract number from string")
-	reg, err := regexp.Compile("[^0-9.]+")
-	if err != nil {
-		return 0, err
-	}
-	strArray := strings.Fields(str)
-	convertedStr, err := strconv.ParseFloat(reg.ReplaceAllString(strArray[0], ""), 64)
-	if err != nil {
-		return 0, err
-	}
-	level.Debug(e.logger).Log("msg", "Successfully converted string to number", "string", str, "number", convertedStr)
-	return convertedStr, nil
-}
-
-func (e *Exporter) bytesConverter(str string) (float64, error) {
-	type errorString struct {
-		s string
-	}
-	var bytesValue float64
-	level.Debug(e.logger).Log("msg", "Converting size to bytes")
-	num, err := e.removeCommas(str)
-	if err != nil {
-		return 0, err
-	}
-
-	if strings.Contains(str, "bytes") {
-		bytesValue = num
-	} else if strings.Contains(str, "KB") {
-		bytesValue = num * 1024
-	} else if strings.Contains(str, "MB") {
-		bytesValue = num * 1024 * 1024
-	} else if strings.Contains(str, "GB") {
-		bytesValue = num * 1024 * 1024 * 1024
-	} else if strings.Contains(str, "TB") {
-		bytesValue = num * 1024 * 1024 * 1024 * 1024
-	} else {
-		return 0, fmt.Errorf("Could not convert %s to bytes", str)
-	}
-	level.Debug(e.logger).Log("msg", "Successfully converted string to bytes", "string", str, "value", bytesValue)
-	return bytesValue, nil
-}
+const calculateValueError = "There was an issue calculating the value"
 
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, ch chan<- prometheus.Metric) {
 	if count == "" {
@@ -105,7 +18,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 	value, err := e.removeCommas(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
@@ -120,7 +33,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
@@ -135,7 +48,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", "There was an issue calculating the value", "metric", metricName, "err", err)
+		level.Debug(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
 		return
 	}
 	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "type", fileStoreType, "directory", fileStoreDir, "value", value)
@@ -159,7 +72,7 @@ type repoSummary struct {
 	TotalDownloaded15m float64
 }
 
-func (e *Exporter) extractRepo(storageInfo storageInfo) ([]repoSummary, error) {
+func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSummary, error) {
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
@@ -215,6 +128,29 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.Percentage)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.Percentage, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
 			}
+		}
+	}
+}
+
+func (e *Exporter) exportStorage(storageInfo artifactory.StorageInfo, ch chan<- prometheus.Metric) {
+	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
+	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
+	for metricName, metric := range storageMetrics {
+		switch metricName {
+		case "artifacts":
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ArtifactsCount, ch)
+		case "artifactsSize":
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.ArtifactsSize, ch)
+		case "binaries":
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.BinariesCount, ch)
+		case "binariesSize":
+			e.exportSize(metricName, metric, storageInfo.BinariesSummary.BinariesSize, ch)
+		case "filestore":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
+		case "filestoreUsed":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
+		case "filestoreFree":
+			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
 		}
 	}
 }

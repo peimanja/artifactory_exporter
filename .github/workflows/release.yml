@@ -17,3 +17,8 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
+        ldflags: |
+          -X github.com/prometheus/common/version.Version=${{ github.event.release.tag_name }}
+          -X github.com/prometheus/common/version.Revision=${{ github.sha }}
+          -X github.com/prometheus/common/version.Branch=${{ github.ref }}
+          -X github.com/prometheus/common/version.BuildDate=${{ github.event.release.created_at }}

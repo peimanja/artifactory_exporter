@@ -1,18 +1,10 @@
 package collector
 
 import (
-	"crypto/tls"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
-	"sync"
-	"time"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/peimanja/artifactory_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 )
 
 const (
@@ -70,51 +62,10 @@ var (
 		"downloaded5m":  newMetric("downloaded_5m", "artifacts", "Number of artifacts downloaded from the repository in the last 5 minutes.", repoLabelNames),
 		"downloaded15m": newMetric("downloaded_15m", "artifacts", "Number of artifacts downloaded from the repository in the last 15 minutes.", repoLabelNames),
 	}
-
-	artifactoryUp = newMetric("up", "", "Was the last scrape of Artifactory successful.", nil)
 )
 
-// Exporter collects JFrog Artifactory stats from the given URI and
-// exports them using the prometheus metrics package.
-type Exporter struct {
-	URI        string
-	cred       config.Credentials
-	authMethod string
-	sslVerify  bool
-	timeout    time.Duration
-	mutex      sync.RWMutex
-
-	up                              prometheus.Gauge
-	totalScrapes, jsonParseFailures prometheus.Counter
-	logger                          log.Logger
-}
-
-// NewExporter returns an initialized Exporter.
-func NewExporter(uri string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration, logger log.Logger) (*Exporter, error) {
-
-	return &Exporter{
-		URI:        uri,
-		cred:       cred,
-		authMethod: authMethod,
-		sslVerify:  sslVerify,
-		timeout:    timeout,
-		up: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "up",
-			Help:      "Was the last scrape of artifactory successful.",
-		}),
-		totalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "exporter_total_scrapes",
-			Help:      "Current total artifactory scrapes.",
-		}),
-		jsonParseFailures: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "exporter_json_parse_failures",
-			Help:      "Number of errors while parsing Json.",
-		}),
-		logger: logger,
-	}, nil
+func init() {
+	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
 }
 
 // Describe describes all the metrics ever exported by the Artifactory exporter. It
@@ -135,131 +86,73 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range artifactsMetrics {
 		ch <- m
 	}
-	ch <- artifactoryUp
+	ch <- e.up.Desc()
 	ch <- e.totalScrapes.Desc()
+	ch <- e.totalAPIErrors.Desc()
 	ch <- e.jsonParseFailures.Desc()
 }
 
-// Collect fetches the stats from  Artifactiry and delivers them
+// Collect fetches the stats from  Artifactory and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock() // To protect metrics from concurrent collects.
 	defer e.mutex.Unlock()
 
 	up := e.scrape(ch)
+	ch <- e.up
+	e.up.Set(up)
 
-	ch <- prometheus.MustNewConstMetric(artifactoryUp, prometheus.GaugeValue, up)
 	ch <- e.totalScrapes
+	ch <- e.totalAPIErrors
 	ch <- e.jsonParseFailures
-}
-
-func (e *Exporter) fetchHTTP(uri string, path string, cred config.Credentials, authMethod string, sslVerify bool, timeout time.Duration) ([]byte, error) {
-	fullPath := fmt.Sprintf("%s/api/%s", uri, path)
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
-	client := http.Client{
-		Timeout:   timeout,
-		Transport: tr,
-	}
-	level.Debug(e.logger).Log("msg", "Fetching http", "path", fullPath)
-	req, err := http.NewRequest("GET", fullPath, nil)
-	if err != nil {
-		return nil, err
-	}
-	if authMethod == "userPass" {
-		req.SetBasicAuth(cred.Username, cred.Password)
-	} else if authMethod == "accessToken" {
-		req.Header.Add("Authorization", "Bearer "+cred.AccessToken)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return bodyBytes, nil
 }
 
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
-	// Fetch System stats
+	// Collect License info
 	var licenseType string
-	license, err := e.fetchLicense()
+	license, err := e.client.FetchLicense()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/license", "err", err)
+		e.totalAPIErrors.Inc()
 		return 0
 	}
 	licenseType = strings.ToLower(license.Type)
-	healthy, err := e.fetchHealth()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/ping", "err", err)
-		return 0
-	}
-	buildInfo, err := e.fetchBuildInfo()
-	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching system/version", "err", err)
-		return 0
-	}
-
-	for metricName, metric := range systemMetrics {
-		switch metricName {
-		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, healthy)
-		case "version":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision)
-		case "license":
-			var validThrough float64
-			timeNow := float64(time.Now().Unix())
-			switch licenseType {
-			case "oss":
-				validThrough = timeNow
-			default:
-				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
-					level.Warn(e.logger).Log("msg", "Can't parse Artifactory license ValidThrough", "err", err)
-					validThrough = timeNow
-				} else {
-					validThrough = float64(validThroughTime.Unix())
+	// Some API endpoints are not available in OSS
+	if licenseType != "oss" {
+		for metricName, metric := range securityMetrics {
+			switch metricName {
+			case "users":
+				err := e.exportUsersCount(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
+			case "groups":
+				err := e.exportGroups(metricName, metric, ch)
+				if err != nil {
+					return 0
 				}
 			}
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, licenseType, license.LicensedTo, license.ValidThrough)
+		}
+		err = e.exportReplications(ch)
+		if err != nil {
+			return 0
 		}
 	}
 
-	// Fetch Storage Info stats
-	storageInfo, err := e.fetchStorageInfo()
+	// Collect and export system metrics
+	err = e.exportSystem(license, ch)
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching storageinfo", "err", err)
 		return 0
 	}
-	fileStoreType := strings.ToLower(storageInfo.FileStoreSummary.StorageType)
-	fileStoreDir := storageInfo.FileStoreSummary.StorageDirectory
-	for metricName, metric := range storageMetrics {
-		switch metricName {
-		case "artifacts":
-			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ArtifactsCount, ch)
-		case "artifactsSize":
-			e.exportSize(metricName, metric, storageInfo.BinariesSummary.ArtifactsSize, ch)
-		case "binaries":
-			e.exportCount(metricName, metric, storageInfo.BinariesSummary.BinariesCount, ch)
-		case "binariesSize":
-			e.exportSize(metricName, metric, storageInfo.BinariesSummary.BinariesSize, ch)
-		case "filestore":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.TotalSpace, fileStoreType, fileStoreDir, ch)
-		case "filestoreUsed":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, ch)
-		case "filestoreFree":
-			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, ch)
-		}
+
+	// Fetch Storage Info stats and register them
+	storageInfo, err := e.client.FetchStorageInfo()
+	if err != nil {
+		e.totalAPIErrors.Inc()
+		return 0
 	}
+	e.exportStorage(storageInfo, ch)
 
 	// Extract repo summaries from storageInfo and register them
 	repoSummaryList, err := e.extractRepo(storageInfo)
@@ -274,39 +167,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		return 0
 	}
 	e.exportArtifacts(repoSummaryList, ch)
-
-	// Some API endpoints are not available in OSS
-	if licenseType != "oss" {
-		// Fetch Security stats
-		users, err := e.fetchUsers()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/users", "err", err)
-			return 0
-		}
-		groups, err := e.fetchGroups()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching security/groups", "err", err)
-			return 0
-		}
-
-		for metricName, metric := range securityMetrics {
-			switch metricName {
-			case "users":
-				e.countUsers(metricName, metric, users, ch)
-			case "groups":
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
-			}
-		}
-
-		// Fetch Replications stats
-		replications, err := e.fetchReplications()
-		if err != nil {
-			level.Error(e.logger).Log("msg", "Can't scrape Artifactory when fetching replications", "err", err)
-			return 0
-		}
-
-		e.exportReplications(replications, ch)
-	}
 
 	return 1
 }

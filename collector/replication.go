@@ -1,46 +1,23 @@
 package collector
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type replication struct {
-	ReplicationType                 string `json:"replicationType"`
-	Enabled                         bool   `json:"enabled"`
-	CronExp                         string `json:"cronExp"`
-	SyncDeletes                     bool   `json:"syncDeletes"`
-	SyncProperties                  bool   `json:"syncProperties"`
-	PathPrefix                      string `json:"pathPrefix"`
-	RepoKey                         string `json:"repoKey"`
-	URL                             string `json:"url"`
-	EnableEventReplication          bool   `json:"enableEventReplication"`
-	CheckBinaryExistenceInFilestore bool   `json:"checkBinaryExistenceInFilestore"`
-	SyncStatistics                  bool   `json:"syncStatistics"`
-}
-
-func (e *Exporter) fetchReplications() ([]replication, error) {
-	var replications []replication
-	level.Debug(e.logger).Log("msg", "Fetching replications stats")
-	resp, err := e.fetchHTTP(e.URI, "replications", e.cred, e.authMethod, e.sslVerify, e.timeout)
+func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
+	// Fetch Replications stats
+	replications, err := e.client.FetchReplications()
 	if err != nil {
-		return nil, err
+		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching replications", "err", err)
+		e.totalAPIErrors.Inc()
+		return err
 	}
-	if err := json.Unmarshal(resp, &replications); err != nil {
-		level.Debug(e.logger).Log("msg", "There was an issue getting replication respond")
-		e.jsonParseFailures.Inc()
-		return replications, err
-	}
-	return replications, nil
-}
-
-func (e *Exporter) exportReplications(replications []replication, ch chan<- prometheus.Metric) {
 	if len(replications) == 0 {
 		level.Debug(e.logger).Log("msg", "No replications stats found")
-		return
+		return nil
 	}
 	for _, replication := range replications {
 		for metricName, metric := range replicationMetrics {
@@ -56,11 +33,5 @@ func (e *Exporter) exportReplications(replications []replication, ch chan<- prom
 			}
 		}
 	}
-}
-
-func b2f(b bool) float64 {
-	if b {
-		return 1
-	}
-	return 0
+	return nil
 }
