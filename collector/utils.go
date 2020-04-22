@@ -16,7 +16,8 @@ func (e *Exporter) removeCommas(str string) (float64, error) {
 		return 0, err
 	}
 	strArray := strings.Fields(str)
-	convertedStr, err := strconv.ParseFloat(reg.ReplaceAllString(strArray[0], ""), 64)
+	strTrimmed := reg.ReplaceAllString(strArray[0], "")
+	convertedStr, err := strconv.ParseFloat(strTrimmed, 64)
 	if err != nil {
 		return 0, err
 	}

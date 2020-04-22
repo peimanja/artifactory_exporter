@@ -110,3 +110,12 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | &#9989; |
 | artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
+
+
+### Grafana Dashboard
+
+Dashboard can be found [here](https://grafana.com/grafana/dashboards/12113).
+
+
+![Grafana dDashboard](/grafana/dashboard-screenshot-1.png)
+![Grafana dDashboard](/grafana/dashboard-screenshot-2.png)
