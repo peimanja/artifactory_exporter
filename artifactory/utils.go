@@ -12,10 +12,7 @@ import (
 
 // APIErrors represents Artifactory API Error response
 type APIErrors struct {
-	Errors []struct {
-		Status  int    `json:"status,omitempty"`
-		Message string `json:"message,omitempty"`
-	} `json:"errors,omitempty"`
+	Errors interface{}
 }
 
 // FetchHTTP is a wrapper function for making all Get API calls
@@ -50,11 +47,10 @@ func (c *Client) FetchHTTP(path string) ([]byte, error) {
 				endpoint: fullPath,
 			}
 		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
 		return nil, &APIError{
-			message:  apiErrors.Errors[0].Message,
+			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
-			status:   apiErrors.Errors[0].Status,
 		}
 	}
 
@@ -98,11 +94,10 @@ func (c *Client) QueryAQL(query []byte) ([]byte, error) {
 				endpoint: fullPath,
 			}
 		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", apiErrors.Errors[0].Message, "status", apiErrors.Errors[0].Status)
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
 		return nil, &APIError{
-			message:  apiErrors.Errors[0].Message,
+			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
-			status:   apiErrors.Errors[0].Status,
 		}
 	}
 
