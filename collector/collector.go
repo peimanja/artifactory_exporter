@@ -119,7 +119,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	}
 	licenseType = strings.ToLower(license.Type)
 	// Some API endpoints are not available in OSS
-	if licenseType != "oss" {
+	if licenseType != "oss" && licenseType != "jcr edition" {
 		for metricName, metric := range securityMetrics {
 			switch metricName {
 			case "users":
