@@ -23,6 +23,7 @@ func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
 	userCount := []usersCount{
 		{0, "saml"},
 		{0, "internal"},
+		{0, "ldap"},
 	}
 
 	for _, user := range users {
@@ -31,6 +32,8 @@ func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
 			userCount[0].count++
 		case "internal":
 			userCount[1].count++
+		case "ldap":
+			userCount[2].count++
 		}
 	}
 	return userCount
@@ -48,7 +51,7 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 	// Count Users
 	usersCount := e.countUsers(users)
 
-	if usersCount[0].count == 0 && usersCount[1].count == 0 {
+	if usersCount[0].count == 0 && usersCount[1].count == 0 && usersCount[2].count == 0{
 		e.jsonParseFailures.Inc()
 		level.Error(e.logger).Log("err", "There was an issue getting users respond")
 		return fmt.Errorf("There was an issue getting users respond")
