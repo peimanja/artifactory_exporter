@@ -13,30 +13,16 @@ type user struct {
 	Realm string `json:"realm"`
 }
 
-type usersCount struct {
-	count float64
-	realm string
-}
+// map[<realm>] <count>
+type realmUserCounts map[string] float64
 
-func (e *Exporter) countUsers(users []artifactory.User) []usersCount {
+func (e *Exporter) countUsersPerRealm(users []artifactory.User) realmUserCounts {
 	level.Debug(e.logger).Log("msg", "Counting users")
-	userCount := []usersCount{
-		{0, "saml"},
-		{0, "internal"},
-		{0, "ldap"},
-	}
-
+	usersPerRealm := realmUserCounts {}
 	for _, user := range users {
-		switch user.Realm {
-		case "saml":
-			userCount[0].count++
-		case "internal":
-			userCount[1].count++
-		case "ldap":
-			userCount[2].count++
-		}
+		usersPerRealm[user.Realm]++;
 	}
-	return userCount
+	return usersPerRealm
 }
 
 func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
@@ -48,17 +34,21 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 		return err
 	}
 
-	// Count Users
-	usersCount := e.countUsers(users)
+	usersPerRealm := e.countUsersPerRealm(users)
 
-	if usersCount[0].count == 0 && usersCount[1].count == 0 && usersCount[2].count == 0{
+	totalUserCount := 0
+	for _, count := range usersPerRealm {
+		totalUserCount += int(count)
+	}
+
+	if totalUserCount == 0 {
 		e.jsonParseFailures.Inc()
 		level.Error(e.logger).Log("err", "There was an issue getting users respond")
 		return fmt.Errorf("There was an issue getting users respond")
 	}
-	for _, user := range usersCount {
-		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", user.realm, "value", user.count)
-		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, user.count, user.realm)
+	for realm, count := range usersPerRealm {
+		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", realm, "value", count)
+		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, count, realm)
 	}
 	return nil
 }
