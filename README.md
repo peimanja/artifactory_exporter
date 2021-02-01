@@ -7,7 +7,7 @@ A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://j
 
 ## Note
 
-This exporter is under development and more metrics will be added later. Tested on Artifactory Enterprise and OSS version `6.16.0`.
+This exporter is under development and more metrics will be added later. Tested on Artifactory Commercial, Enterprise and OSS version `6.x` and `7.x`.
 
 ## Authentication
 
