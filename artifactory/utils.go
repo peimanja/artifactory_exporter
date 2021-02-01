@@ -37,6 +37,24 @@ func (c *Client) FetchHTTP(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 404 {
+		var apiErrors APIErrors
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
+			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
+			return nil, &UnmarshalError{
+				message:  err.Error(),
+				endpoint: fullPath,
+			}
+		}
+		level.Warn(c.logger).Log("msg", "The endpoint does not exist", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status", 404)
+		return nil, &APIError{
+			message:  fmt.Sprintf("%v", apiErrors.Errors),
+			endpoint: fullPath,
+			status:   404,
+		}
+	}
+
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)

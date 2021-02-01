@@ -29,6 +29,9 @@ func (c *Client) FetchReplications() ([]Replication, error) {
 	level.Debug(c.logger).Log("msg", "Fetching replications stats")
 	resp, err := c.FetchHTTP(replicationEndpoint)
 	if err != nil {
+		if err.(*APIError).status == 404 {
+			return replications, nil
+		}
 		return nil, err
 	}
 	if err := json.Unmarshal(resp, &replications); err != nil {
