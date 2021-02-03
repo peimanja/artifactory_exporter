@@ -41,6 +41,64 @@ Set the credentials in `env_file_name` and you can deploy this exporter using th
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
 ```
 
+## Install with Helm
+
+[Helm](https://helm.sh) must be installed to use the charts.
+Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
+
+Source code for the exporter helm chart can be found [here peimanja/helm-charts](https://github.com/peimanja/helm-charts/tree/main/charts/prometheus-artifactory-exporter)
+
+Once Helm is set up properly, add the repo as follows:
+
+### Prerequisites
+
+- Kubernetes 1.8+ with Beta APIs enabled
+
+### Add Repo
+
+```console
+helm repo add peimanja https://peimanja.github.io/helm-charts
+helm repo update
+```
+
+_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
+
+### Configuration
+
+See [Customizing the Chart Before Installing](https://helm.sh/docs/intro/using_helm/#customizing-the-chart-before-installing). To see all configurable options with detailed comments, visit the chart's [values.yaml](https://github.com/peimanja/helm-charts/blob/main/charts/prometheus-artifactory-exporter/values.yaml), or run these configuration commands:
+
+
+```console
+# Helm 3
+helm show values peimanja/prometheus-artifactory-exporter
+```
+
+Set your values in `myvals.yaml`:
+```yaml
+artifactory:
+  url: http://artifactory:8081/artifactory
+  accessToken: "xxxxxxxxxxxxxxxxxxxx"
+  existingSecret: false
+
+options:
+  logLevel: info
+  logFormat: logfmt
+  telemetryPath: /metrics
+  verifySSL: false
+  timeout: 5s
+```
+
+### Install Chart
+
+```console
+# Helm 3
+helm install -f myvals.yaml [RELEASE_NAME] peimanja/prometheus-artifactory-exporter
+```
+
+_See [configuration](#configuration) below._
+
+_See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
+
 ### Flags
 
 ```bash
