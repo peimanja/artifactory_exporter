@@ -46,6 +46,8 @@ $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter
 [Helm](https://helm.sh) must be installed to use the charts.
 Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 
+Source code for the exporter helm chart can be found [here peimanja/helm-charts](https://github.com/peimanja/helm-charts/tree/main/charts/prometheus-artifactory-exporter)
+
 Once Helm is set up properly, add the repo as follows:
 
 ### Prerequisites
