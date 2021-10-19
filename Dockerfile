@@ -1,4 +1,4 @@
-FROM golang:1.15 as build
+FROM golang:1.17 as build
 
 WORKDIR /go/artifactory_exporter
 ADD . /go/artifactory_exporter
@@ -15,7 +15,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o /go/bin/artifactory_exporter -ldflags " 
     -X github.com/prometheus/common/version.Branch=${SOURCE_BRANCH} \
     -X github.com/prometheus/common/version.BuildDate=${BUILD_DATE}"
 
-FROM gcr.io/distroless/base-debian10
+FROM gcr.io/distroless/base-debian11
 COPY --from=build /go/bin/artifactory_exporter /
 
 USER   nobody
