@@ -7,10 +7,16 @@ on:
   pull_request:
     branches:
       - master
+    types:
+      - labeled
+      - opened
+      - reopened
+      - synchronize
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+    if: github.event.action != 'labeled'
     steps:
       - name: Checkout
         uses: actions/checkout@master
@@ -81,3 +87,11 @@ jobs:
           body: ${{ steps.bumpr.outputs.message }}
           draft: false
           prerelease: false
+
+  release-check:
+    if: github.event.action == 'labeled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Post bumpr status comment
+        uses: haya14busa/action-bumpr@v1
