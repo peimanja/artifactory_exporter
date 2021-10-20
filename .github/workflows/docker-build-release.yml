@@ -57,7 +57,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args:
+          build-args: |
             VERSION=${{ steps.tag.outputs.value }}
             SOURCE_COMMIT=${{ github.sha }}
             SOURCE_BRANCH=${{ github.ref }}
