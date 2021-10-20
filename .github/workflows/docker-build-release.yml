@@ -80,7 +80,7 @@ jobs:
       - uses: actions/create-release@v1
         if: "steps.tag.outputs.value != '' && github.event_name != 'pull_request'"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           tag_name: ${{ steps.tag.outputs.value }}
           release_name: Release ${{ steps.tag.outputs.value }}
