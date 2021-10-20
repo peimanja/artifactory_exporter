@@ -61,7 +61,7 @@ jobs:
             VERSION=${{ steps.tag.outputs.value }}
             SOURCE_COMMIT=${{ github.sha }}
             SOURCE_BRANCH=${{ github.ref }}
-            BUILD_DATE=${{ github.created_at }}
+            BUILD_DATE=${{ github.commits.0.timestamp }}
 
       - uses: haya14busa/action-update-semver@v1
         if: "!steps.bumpr.outputs.skip && github.event_name != 'pull_request'"
