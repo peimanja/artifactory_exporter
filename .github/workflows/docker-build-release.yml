@@ -38,7 +38,7 @@ jobs:
         with:
           images: peimanja/artifactory_exporter
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern={{version}},value=${{ steps.bumpr.outputs.next_version }}
             type=sha,prefix=
             ${{ steps.tag.outputs.value }}
           flavor: |
@@ -58,7 +58,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args:
-            VERSION=${{ steps.bumpr.outputs.next_version }}
+            VERSION=${{ steps.tag.outputs.value }}
             SOURCE_COMMIT=${{ github.sha }}
             SOURCE_BRANCH=${{ github.ref }}
             BUILD_DATE=${{ github.created_at }}
