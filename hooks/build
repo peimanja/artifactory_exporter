@@ -1,2 +1,0 @@
-#!/bin/bash 
-docker build -t $IMAGE_NAME --build-arg SOURCE_COMMIT=$SOURCE_COMMIT  --build-arg SOURCE_BRANCH=$SOURCE_BRANCH --build-arg BUILD_DATE=$(date +%FT%TZ) .
