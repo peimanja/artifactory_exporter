@@ -21,6 +21,7 @@ func (c *Client) FetchHTTP(path string) ([]byte, error) {
 	level.Debug(c.logger).Log("msg", "Fetching http", "path", fullPath)
 	req, err := http.NewRequest("GET", fullPath, nil)
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error creating request", "err", err.Error())
 		return nil, err
 	}
 	switch c.authMethod {
@@ -33,6 +34,7 @@ func (c *Client) FetchHTTP(path string) ([]byte, error) {
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -74,6 +76,7 @@ func (c *Client) FetchHTTP(path string) ([]byte, error) {
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
 		return nil, err
 	}
 
@@ -87,6 +90,7 @@ func (c *Client) QueryAQL(query []byte) ([]byte, error) {
 	req, err := http.NewRequest("POST", fullPath, bytes.NewBuffer(query))
 	req.Header = http.Header{"Content-Type": {"text/plain"}}
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error creating request", "err", err.Error())
 		return nil, err
 	}
 	switch c.authMethod {
@@ -100,6 +104,7 @@ func (c *Client) QueryAQL(query []byte) ([]byte, error) {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -121,6 +126,7 @@ func (c *Client) QueryAQL(query []byte) ([]byte, error) {
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
 		return nil, err
 	}
 	return bodyBytes, nil
