@@ -99,4 +99,3 @@ jobs:
             SOURCE_COMMIT=${{ github.sha }}
             SOURCE_BRANCH=${{ github.ref }}
             BUILD_DATE=${{ steps.date.outputs.value }}
-
