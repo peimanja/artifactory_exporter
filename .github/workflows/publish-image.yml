@@ -1,0 +1,101 @@
+name: Publish Image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.go'
+      - "go.mod"
+      - "go.sum"
+      - 'Dockerfile'
+      - '.github/workflows/publish-image.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '**.go'
+      - "go.mod"
+      - "go.sum"
+      - 'Dockerfile'
+      - '.github/workflows/publish-image.yml'
+  release:
+    types: [published]
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Version
+        id: version
+        uses: haya14busa/action-cond@v1
+        with:
+          cond: ${{ github.event_name == 'release' }}
+          if_true: ${{ github.event.release.tag_name }}
+          if_false: "canary"
+
+      - name: Checkout
+        uses: actions/checkout@master
+
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: "${{ secrets.DOCKERHUB_USERNAME }}"
+          password: "${{ secrets.DOCKERHUB_TOKEN }}"
+
+      - name: Docker meta Docker Hub
+        id: meta-dockerhub
+        uses: crazy-max/ghaction-docker-meta@v2
+        with:
+          images: peimanja/artifactory_exporter
+          tags: |
+            type=raw,value=${{ steps.version.outputs.value }}
+            type=raw,value={{sha}}
+            type=ref,event=branch
+          flavor: |
+            latest=true
+
+      - name: Docker meta GitHub
+        id: meta-github
+        uses: docker/metadata-action@v3
+        with:
+          images: "ghcr.io/${{ github.event.repository.owner.login }}/${{ github.event.repository.name }}"
+          tags: |
+            type=raw,value=${{ steps.version.outputs.value }}
+            type=raw,value={{sha}}
+            type=ref,event=branch
+          flavor: |
+            latest=true
+
+      - name: Set up  QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - id: date
+        run: echo "::set-output name=value::$(date +%FT%TZ)"
+
+      - name: Build/Push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          labels: ${{ steps.meta-dockerhub.outputs.labels }}
+          tags: |
+            ${{ steps.meta-dockerhub.outputs.tags }}
+            ${{ steps.meta-github.outputs.tags }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.value }}
+            SOURCE_COMMIT=${{ github.sha }}
+            SOURCE_BRANCH=${{ github.ref }}
+            BUILD_DATE=${{ steps.date.outputs.value }}
