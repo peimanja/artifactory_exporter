@@ -23,7 +23,7 @@ on:
     types: [published]
 
 jobs:
-  release:
+  docker-build:
     runs-on: ubuntu-latest
     steps:
       - name: Get Version
