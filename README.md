@@ -1,8 +1,8 @@
-# JFrog Artifactory Exporter 
+# JFrog Artifactory Exporter
 
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/peimanja/artifactory_exporter/Build)](https://github.com/peimanja/artifactory_exporter/actions) [![Docker Build](https://img.shields.io/docker/cloud/build/peimanja/artifactory_exporter)](https://hub.docker.com/r/peimanja/artifactory_exporter/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/peimanja/artifactory_exporter)](https://goreportcard.com/report/github.com/peimanja/artifactory_exporter)
 
-A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) stats. 
+A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) stats.
 
 
 ## Note
@@ -117,6 +117,7 @@ Flags:
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
       --log.level=info          Only log messages with the given severity or above. One of: [debug, info, warn, error]
       --log.format=logfmt       Output format of log messages. One of: [logfmt, json]
+      --version                 Show application version.
 ```
 
 | Flag / Environment Variable | Required | Default | Description |

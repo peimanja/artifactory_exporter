@@ -9,6 +9,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
+	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -46,6 +47,7 @@ func NewConfig() (*Config, error) {
 	promlogConfig := &promlog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
 	kingpin.HelpFlag.Short('h')
+	kingpin.Version(version.Info() + " " + version.BuildContext())
 	kingpin.Parse()
 	logger := promlog.New(promlogConfig)
 
