@@ -17,6 +17,8 @@ jobs:
             goos: darwin
     steps:
     - uses: actions/checkout@v2
+    - id: date
+      run: echo "::set-output name=value::$(date +%FT%TZ)"
     - uses: wangyoucao577/go-release-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -27,4 +29,5 @@ jobs:
           -X github.com/prometheus/common/version.Version=${{ github.event.release.tag_name }}
           -X github.com/prometheus/common/version.Revision=${{ github.sha }}
           -X github.com/prometheus/common/version.Branch=${{ github.ref }}
-          -X github.com/prometheus/common/version.BuildDate=${{ github.event.release.created_at }}
+          -X github.com/prometheus/common/version.BuildDate=${{ steps.date.outputs.value }}
+          -X github.com/prometheus/common/version.BuildUser=github-actions
