@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: always
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+
+  proxy:
+    depends_on:
+      - exporter
+    image: decentralize/caching-proxy
+    restart: always
+    environment:
+      UPSTREAM: "http://exporter:9531"
+      MAX_SIZE: "100m"
+      PROXY_READ_TIMEOUT: "2400s"
+      PROXY_CACHE_VALID: "60s"
+    ports:
+      - 8088:80/tcp
+
+  exporter:
+    image: peimanja/artifactory_exporter
+    restart: always
+    ports:
+      - 9531:9531
+    command: --log.level=debug
+    env_file:
+      - .env
