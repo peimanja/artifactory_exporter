@@ -35,10 +35,21 @@ $ ./artifactory_exporter <flags>
 ### Docker
 
 Set the credentials in `env_file_name` and you can deploy this exporter using the [peimanja/artifactory_exporter](https://registry.hub.docker.com/r/peimanja/artifactory_exporter/) Docker image:
-:
 
 ```bash
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
+```
+
+### Docker Compose
+
+Running the exporter against an Artifactory instance with millions of artifacts will cause performance issues in case Prometheus will scrape too often.
+
+To avoid such situations you can run nginx in front of the exporter and use it as a cache. The Artifactory responses will be cached in nginx and kept valid for `PROXY_CACHE_VALID` seconds. After that time any new request from Prometheus will re-request metrics from Artifactory and store again in the nginx cache.
+
+Set the credentials in an environment file as described in the *Docker* section and store the file as `.env` next to `docker-compose.yml` and run the following command:
+
+```bash
+docker-compose up -d
 ```
 
 ## Install with Helm
