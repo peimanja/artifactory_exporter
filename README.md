@@ -1,6 +1,6 @@
 # JFrog Artifactory Exporter
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/peimanja/artifactory_exporter/Build)](https://github.com/peimanja/artifactory_exporter/actions) [![Docker Build](https://img.shields.io/docker/cloud/build/peimanja/artifactory_exporter)](https://hub.docker.com/r/peimanja/artifactory_exporter/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/peimanja/artifactory_exporter)](https://goreportcard.com/report/github.com/peimanja/artifactory_exporter)
+[![Go Build](https://github.com/peimanja/artifactory_exporter/actions/workflows/release.yml/badge.svg)](https://github.com/peimanja/artifactory_exporter/actions/workflows/release.yml) [![Publish Image](https://github.com/peimanja/artifactory_exporter/actions/workflows/publish-image.yml/badge.svg)](https://github.com/peimanja/artifactory_exporter/actions/workflows/publish-image.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/peimanja/artifactory_exporter)](https://goreportcard.com/report/github.com/peimanja/artifactory_exporter)
 
 A [Prometheus](https://prometheus.io) exporter for [JFrog Artifactory](https://jfrog.com/artifactory) stats.
 
