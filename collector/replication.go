@@ -15,11 +15,11 @@ func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
 		e.totalAPIErrors.Inc()
 		return err
 	}
-	if len(replications) == 0 {
+	if len(replications.Replications) == 0 {
 		level.Debug(e.logger).Log("msg", "No replications stats found")
 		return nil
 	}
-	for _, replication := range replications {
+	for _, replication := range replications.Replications {
 		for metricName, metric := range replicationMetrics {
 			switch metricName {
 			case "enabled":
@@ -29,7 +29,7 @@ func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
 				rURL := strings.ToLower(replication.URL)
 				cronExp := replication.CronExp
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "url", rURL, "cron", cronExp, "value", enabled)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, rURL, cronExp)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, rURL, cronExp, replications.NodeId)
 			}
 		}
 	}

@@ -12,19 +12,27 @@ const (
 	licenseEndpoint = "system/license"
 )
 
+type HealthStatus struct {
+	Healthy bool
+	NodeId  string
+}
+
 // FetchHealth returns true if the ping endpoint returns "OK"
-func (c *Client) FetchHealth() (bool, error) {
+func (c *Client) FetchHealth() (HealthStatus, error) {
+	health := HealthStatus{Healthy: false}
 	level.Debug(c.logger).Log("msg", "Fetching health stats")
 	resp, err := c.FetchHTTP(pingEndpoint)
 	if err != nil {
-		return false, err
+		return health, err
 	}
-	bodyString := string(resp)
+	health.NodeId = resp.NodeId
+	bodyString := string(resp.Body)
 	if bodyString == "OK" {
 		level.Debug(c.logger).Log("msg", "System ping returned OK")
-		return true, nil
+		health.Healthy = true
+		return health, nil
 	}
-	return false, err
+	return health, err
 }
 
 // BuildInfo represents API respond from version endpoint
@@ -33,6 +41,7 @@ type BuildInfo struct {
 	Revision string   `json:"revision"`
 	Addons   []string `json:"addons"`
 	License  string   `json:"license"`
+	NodeId   string
 }
 
 // FetchBuildInfo makes the API call to version endpoint and returns BuildInfo
@@ -43,7 +52,8 @@ func (c *Client) FetchBuildInfo() (BuildInfo, error) {
 	if err != nil {
 		return buildInfo, err
 	}
-	if err := json.Unmarshal(resp, &buildInfo); err != nil {
+	buildInfo.NodeId = resp.NodeId
+	if err := json.Unmarshal(resp.Body, &buildInfo); err != nil {
 		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal buildInfo respond")
 		return buildInfo, &UnmarshalError{
 			message:  err.Error(),
@@ -58,6 +68,7 @@ type LicenseInfo struct {
 	Type         string `json:"type"`
 	ValidThrough string `json:"validThrough"`
 	LicensedTo   string `json:"licensedTo"`
+	NodeId       string
 }
 
 // FetchLicense makes the API call to license endpoint and returns LicenseInfo
@@ -68,7 +79,8 @@ func (c *Client) FetchLicense() (LicenseInfo, error) {
 	if err != nil {
 		return licenseInfo, err
 	}
-	if err := json.Unmarshal(resp, &licenseInfo); err != nil {
+	licenseInfo.NodeId = resp.NodeId
+	if err := json.Unmarshal(resp.Body, &licenseInfo); err != nil {
 		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal licenseInfo respond")
 		return licenseInfo, &UnmarshalError{
 			message:  err.Error(),

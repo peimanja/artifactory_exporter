@@ -14,13 +14,13 @@ type user struct {
 }
 
 // map[<realm>] <count>
-type realmUserCounts map[string] float64
+type realmUserCounts map[string]float64
 
 func (e *Exporter) countUsersPerRealm(users []artifactory.User) realmUserCounts {
 	level.Debug(e.logger).Log("msg", "Counting users")
-	usersPerRealm := realmUserCounts {}
+	usersPerRealm := realmUserCounts{}
 	for _, user := range users {
-		usersPerRealm[user.Realm]++;
+		usersPerRealm[user.Realm]++
 	}
 	return usersPerRealm
 }
@@ -34,8 +34,7 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 		return err
 	}
 
-	usersPerRealm := e.countUsersPerRealm(users)
-
+	usersPerRealm := e.countUsersPerRealm(users.Users)
 	totalUserCount := 0
 	for _, count := range usersPerRealm {
 		totalUserCount += int(count)
@@ -48,7 +47,7 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 	}
 	for realm, count := range usersPerRealm {
 		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", realm, "value", count)
-		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, count, realm)
+		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, count, realm, users.NodeId)
 	}
 	return nil
 }
@@ -66,7 +65,8 @@ func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch c
 		e.totalAPIErrors.Inc()
 		return err
 	}
-	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", float64(len(groups)))
-	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups)))
+
+	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", float64(len(groups.Groups)))
+	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups.Groups)), groups.NodeId)
 	return nil
 }

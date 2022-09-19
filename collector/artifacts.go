@@ -15,6 +15,7 @@ type artifact struct {
 
 type artifactQueryResult struct {
 	Results []artifact `json:"results,omitempty"`
+	NodeId  string
 }
 
 func (e *Exporter) findArtifacts(period string, queryType string) (artifactQueryResult, error) {
@@ -35,7 +36,8 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 		e.totalAPIErrors.Inc()
 		return artifacts, err
 	}
-	if err := json.Unmarshal(resp, &artifacts); err != nil {
+	artifacts.NodeId = resp.NodeId
+	if err := json.Unmarshal(resp.Body, &artifacts); err != nil {
 		level.Warn(e.logger).Log("msg", "There was an error when trying to unmarshal AQL response", "queryType", queryType, "period", period, "error", err)
 		e.jsonParseFailures.Inc()
 		return artifacts, err
@@ -72,31 +74,37 @@ func (e *Exporter) getTotalArtifacts(r []repoSummary) ([]repoSummary, error) {
 	repoSummaries := r
 	for i := range repoSummaries {
 		for _, k := range created1m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalCreate1m++
 			}
 		}
 		for _, k := range created5m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalCreated5m++
 			}
 		}
 		for _, k := range created15m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalCreated15m++
 			}
 		}
 		for _, k := range downloaded1m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalDownloaded1m++
 			}
 		}
 		for _, k := range downloaded5m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalDownloaded5m++
 			}
 		}
 		for _, k := range downloaded15m.Results {
+			repoSummaries[i].NodeId = created1m.NodeId
 			if repoSummaries[i].Name == k.Repo {
 				repoSummaries[i].TotalDownloaded15m++
 			}
@@ -111,22 +119,22 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 			switch metricName {
 			case "created1m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreate1m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreate1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreate1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created5m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreated5m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created15m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreated15m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded1m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded1m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded5m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded5m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded15m":
 				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded15m)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			}
 		}
 	}
