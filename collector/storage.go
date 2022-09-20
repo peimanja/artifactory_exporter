@@ -104,6 +104,7 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 				return repoSummaryList, err
 			}
 		}
+		rs.NodeId = storageInfo.NodeId
 		repoSummaryList = append(repoSummaryList, rs)
 	}
 	return repoSummaryList, err
