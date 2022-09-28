@@ -12,9 +12,10 @@ const (
 )
 
 var (
-	filestoreLabelNames   = []string{"storage_type", "storage_dir"}
-	repoLabelNames        = []string{"name", "type", "package_type"}
-	replicationLabelNames = []string{"name", "type", "url", "cron_exp"}
+	defaultLabelNames     = []string{"node_id"}
+	filestoreLabelNames   = append([]string{"storage_type", "storage_dir"}, defaultLabelNames...)
+	repoLabelNames        = append([]string{"name", "type", "package_type"}, defaultLabelNames...)
+	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp"}, defaultLabelNames...)
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
@@ -29,15 +30,15 @@ var (
 	}
 
 	securityMetrics = metrics{
-		"users":  newMetric("users", "security", "Number of Artifactory users for each realm.", []string{"realm"}),
-		"groups": newMetric("groups", "security", "Number of Artifactory groups", nil),
+		"users":  newMetric("users", "security", "Number of Artifactory users for each realm.", append([]string{"realm"}, defaultLabelNames...)),
+		"groups": newMetric("groups", "security", "Number of Artifactory groups", defaultLabelNames),
 	}
 
 	storageMetrics = metrics{
-		"artifacts":      newMetric("artifacts", "storage", "Total artifacts count stored in Artifactory.", nil),
-		"artifactsSize":  newMetric("artifacts_size_bytes", "storage", "Total artifacts Size stored in Artifactory in bytes.", nil),
-		"binaries":       newMetric("binaries", "storage", "Total binaries count stored in Artifactory.", nil),
-		"binariesSize":   newMetric("binaries_size_bytes", "storage", "Total binaries Size stored in Artifactory in bytes.", nil),
+		"artifacts":      newMetric("artifacts", "storage", "Total artifacts count stored in Artifactory.", defaultLabelNames),
+		"artifactsSize":  newMetric("artifacts_size_bytes", "storage", "Total artifacts Size stored in Artifactory in bytes.", defaultLabelNames),
+		"binaries":       newMetric("binaries", "storage", "Total binaries count stored in Artifactory.", defaultLabelNames),
+		"binariesSize":   newMetric("binaries_size_bytes", "storage", "Total binaries Size stored in Artifactory in bytes.", defaultLabelNames),
 		"filestore":      newMetric("filestore_bytes", "storage", "Total available space in the file store in bytes.", filestoreLabelNames),
 		"filestoreUsed":  newMetric("filestore_used_bytes", "storage", "Used space in the file store in bytes.", filestoreLabelNames),
 		"filestoreFree":  newMetric("filestore_free_bytes", "storage", "Free space in the file store in bytes.", filestoreLabelNames),
@@ -49,9 +50,9 @@ var (
 	}
 
 	systemMetrics = metrics{
-		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", nil),
-		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", []string{"version", "revision"}),
-		"license": newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", []string{"type", "licensed_to", "expires"}),
+		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", defaultLabelNames),
+		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", append([]string{"version", "revision"}, defaultLabelNames...)),
+		"license": newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", append([]string{"type", "licensed_to", "expires"}, defaultLabelNames...)),
 	}
 
 	artifactsMetrics = metrics{

@@ -37,6 +37,7 @@ type StorageInfo struct {
 		PackageType  string `json:"packageType"`
 		Percentage   string `json:"percentage"`
 	} `json:"repositoriesSummaryList"`
+	NodeId string
 }
 
 // FetchStorageInfo makes the API call to storageinfo endpoint and returns StorageInfo
@@ -47,7 +48,8 @@ func (c *Client) FetchStorageInfo() (StorageInfo, error) {
 	if err != nil {
 		return storageInfo, err
 	}
-	if err := json.Unmarshal(resp, &storageInfo); err != nil {
+	storageInfo.NodeId = resp.NodeId
+	if err := json.Unmarshal(resp.Body, &storageInfo); err != nil {
 		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal storageInfo respond")
 		return storageInfo, &UnmarshalError{
 			message:  err.Error(),
