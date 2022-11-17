@@ -1,6 +1,6 @@
 module github.com/peimanja/artifactory_exporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/go-kit/kit v0.9.0
@@ -24,5 +24,5 @@ require (
 	github.com/prometheus/client_model v0.1.0 // indirect
 	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
-	golang.org/x/sys v0.0.0-20191220142924-d4481acd189f // indirect
+	golang.org/x/sys v0.2.0 // indirect
 )
