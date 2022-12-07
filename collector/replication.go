@@ -28,8 +28,9 @@ func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
 				rType := strings.ToLower(replication.ReplicationType)
 				rURL := strings.ToLower(replication.URL)
 				cronExp := replication.CronExp
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "url", rURL, "cron", cronExp, "value", enabled)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, rURL, cronExp, replications.NodeId)
+				status := replication.Status
+				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", replication.RepoKey, "type", rType, "url", rURL, "cron", cronExp, "status", status, "value", enabled)
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, enabled, repo, rType, rURL, cronExp, status, replications.NodeId)
 			}
 		}
 	}

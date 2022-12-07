@@ -10,11 +10,12 @@ import (
 
 // Client represents Artifactory HTTP Client
 type Client struct {
-	URI        string
-	authMethod string
-	cred       config.Credentials
-	client     *http.Client
-	logger     log.Logger
+	URI             string
+	authMethod      string
+	cred            config.Credentials
+	optionalMetrics config.OptionalMetrics
+	client          *http.Client
+	logger          log.Logger
 }
 
 // NewClient returns an initialized Artifactory HTTP Client.
@@ -25,10 +26,11 @@ func NewClient(conf *config.Config) *Client {
 		Transport: tr,
 	}
 	return &Client{
-		URI:        conf.ArtiScrapeURI,
-		authMethod: conf.Credentials.AuthMethod,
-		cred:       *conf.Credentials,
-		client:     client,
-		logger:     conf.Logger,
+		URI:             conf.ArtiScrapeURI,
+		authMethod:      conf.Credentials.AuthMethod,
+		cred:            *conf.Credentials,
+		optionalMetrics: conf.OptionalMetrics,
+		client:          client,
+		logger:          conf.Logger,
 	}
 }
