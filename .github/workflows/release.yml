@@ -1,7 +1,12 @@
 name: Go Build
 on:
   release:
-    types: [created]
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build'
+        required: true
 
 jobs:
   releases-matrix:
@@ -17,6 +22,8 @@ jobs:
             goos: darwin
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
     - id: date
       run: echo "::set-output name=value::$(date +%FT%TZ)"
     - uses: wangyoucao577/go-release-action@master
@@ -25,8 +32,9 @@ jobs:
         goversion: 1.18
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
+        release_tag: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         ldflags: |
-          -X github.com/prometheus/common/version.Version=${{ github.event.release.tag_name }}
+          -X github.com/prometheus/common/version.Version=${{ github.event.release.tag_name || github.event.inputs.tag }}
           -X github.com/prometheus/common/version.Revision=${{ github.sha }}
           -X github.com/prometheus/common/version.Branch=${{ github.ref }}
           -X github.com/prometheus/common/version.BuildDate=${{ steps.date.outputs.value }}
