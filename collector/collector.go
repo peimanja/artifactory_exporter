@@ -15,7 +15,7 @@ var (
 	defaultLabelNames     = []string{"node_id"}
 	filestoreLabelNames   = append([]string{"storage_type", "storage_dir"}, defaultLabelNames...)
 	repoLabelNames        = append([]string{"name", "type", "package_type"}, defaultLabelNames...)
-	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp"}, defaultLabelNames...)
+	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp", "status"}, defaultLabelNames...)
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {

@@ -126,6 +126,8 @@ Flags:
                                 URI on which to scrape JFrog Artifactory.
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
+      --optional-metric=metric-name ...
+                                optional metric to be enabled. Pass multiple times to enable multiple optional metrics.
       --log.level=info          Only log messages with the given severity or above. One of: [debug, info, warn, error]
       --log.format=logfmt       Output format of log messages. One of: [logfmt, json]
       --version                 Show application version.
@@ -138,6 +140,7 @@ Flags:
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
+| `optional-metric`| No | | optional metric to be enabled. Pass multiple times to enable multiple optional metrics. |
 | `log.level` | No | `info` | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
 | `log.format` | No | `logfmt` | Output format of log messages. One of: [logfmt, json]. |
 | `ARTI_USERNAME` | *No | | User to access Artifactory |
@@ -157,7 +160,7 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  | &#9989; |
 | artifactory_exporter_total_api_errors | Current total Artifactory API errors when scraping for stats. |  | &#9989; |
 | artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  | &#9989; |
-| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp` | |
+| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp`, `status` | |
 | artifactory_security_groups | Number of Artifactory groups. | | |
 | artifactory_security_users | Number of Artifactory users for each realm. | `realm` | |
 | artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  | &#9989; |
@@ -181,6 +184,13 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
 
+#### Optional metrics
+
+Some metrics are expensive to compute and are disabled by default. To enable them, use `--optional-metric=metric_name` flag. Use this with caution as it may impact the performance in Artifactory instances with many repositories.
+
+Supported optional metrics:
+
+* `replication_status` - Extracts status of replication for each repository which has replication enabled. Enabling this will add the `status` label to `artifactory_replication_enabled` metric.
 
 ### Grafana Dashboard
 
