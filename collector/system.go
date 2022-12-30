@@ -34,7 +34,7 @@ func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prome
 			var validThrough float64
 			timeNow := float64(time.Now().Unix())
 			switch licenseType {
-			case "oss", "jcr edition":
+			case "oss", "jcr edition", "community edition for c/c++":
 				validThrough = timeNow
 			default:
 				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
