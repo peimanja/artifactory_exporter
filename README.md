@@ -114,7 +114,7 @@ _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documen
 
 ```bash
 $  docker run peimanja/artifactory_exporter:latest -h
-usage: main --artifactory.user=ARTIFACTORY.USER [<flags>]
+usage: artifactory_exporter [<flags>]
 
 Flags:
   -h, --help                    Show context-sensitive help (also try --help-long and --help-man).
@@ -183,6 +183,12 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | &#9989; |
 | artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
+| artifactory_federation_mirror_lag | Federation mirror lag in milliseconds. | `name`, `remote_url`, `remote_name` | |
+| artifactory_federation_mirror_status | Federation mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
+| artifactory_federation_unavailable_mirror | Unsynchronized federated mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
+
+* Common labels:
+  * `node_id`: Artifactory node ID that the metric is scraped from.
 
 #### Optional metrics
 
@@ -191,11 +197,27 @@ Some metrics are expensive to compute and are disabled by default. To enable the
 Supported optional metrics:
 
 * `replication_status` - Extracts status of replication for each repository which has replication enabled. Enabling this will add the `status` label to `artifactory_replication_enabled` metric.
+* `federation_status` - Extracts repo federation metrics. Enabling this will add three new metrics: `artifactory_federation_mirror_lag`, `artifactory_federation_mirror_status` and `artifactory_federation_unavailable_mirror`. Please note that these metrics are only available in Artifactory Enterprise Plus and version 7.18.3 and above.
 
 ### Grafana Dashboard
 
 Dashboard can be found [here](https://grafana.com/grafana/dashboards/12113).
 
-
 ![Grafana dDashboard](/grafana/dashboard-screenshot-1.png)
 ![Grafana dDashboard](/grafana/dashboard-screenshot-2.png)
+
+### Common Issues
+
+In most cases enabling debug logs will help to identify the issue. To enable debug logs, use `--log.level=debug` flag.
+
+#### No metrics are being scraped
+
+* Check if the exporter is running and listening on the port specified by `--web.listen-address` flag.
+* Check if `artifactory_up` metric is `1` or `0`. If it is `0`, check the logs for the error message.
+* Check if `artifactory_exporter_total_api_errors` metric is `0`. If it is not `0` and it is increasing, check the logs for the error message.
+
+#### Some metrics or labels are missing
+
+* Check the logs to see if there are any timeouts or errors while scraping for metrics. In a large Artifactory instance, it may take a long time to scrape for all metrics especially `artifactory_artifacts_*` metrics. If there are any errors, try increasing the default timeout(5s) using `--timeout` flag.
+* Some metrics are not available based on your version or license type. Check the [metrics](###metrics) section to see if the metric is available for your license type.
+* Some metrics are optional and are disabled by default. Check the [optional metrics](###optional-metrics) section to see available optional metrics. You can enable them using `--optional-metric=metric_name` flag. You can pass this flag multiple times to enable multiple optional metrics.
