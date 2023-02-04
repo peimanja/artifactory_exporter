@@ -187,8 +187,8 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
 | artifactory_federation_mirror_lag | Federation mirror lag in milliseconds. | `name`, `remote_url`, `remote_name` | |
-| artifactory_federation_mirror_status | Federation mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
 | artifactory_federation_unavailable_mirror | Unsynchronized federated mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
+| artifactory_federation_repo_status | Synchronization status of the Federation for a repository | `status`, `name`, `remote_url`, `remote_name` | |
 
 * Common labels:
   * `node_id`: Artifactory node ID that the metric is scraped from.
