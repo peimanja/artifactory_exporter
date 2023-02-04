@@ -84,7 +84,7 @@ func (e *Exporter) exportFederationRepoStatus(repoSummary []repoSummary, ch chan
 
 		for _, mirrorEventsStatusInfo := range federationRepoStatus.MirrorEventsStatusInfo {
 			level.Debug(e.logger).Log("msg", "Registering metric", "metric", "federationRepoStatus", "status", mirrorEventsStatusInfo.Status, "repo", repo, "remote_url", mirrorEventsStatusInfo.RemoteUrl, "remote_name", mirrorEventsStatusInfo.RemoteRepoKey)
-			ch <- prometheus.MustNewConstMetric(federationMetrics["repoStatus"], prometheus.GaugeValue, 1, mirrorEventsStatusInfo.Status, repo, mirrorEventsStatusInfo.RemoteUrl, mirrorEventsStatusInfo.RemoteRepoKey, federationRepoStatus.NodeId)
+			ch <- prometheus.MustNewConstMetric(federationMetrics["repoStatus"], prometheus.GaugeValue, 1, strings.ToLower(mirrorEventsStatusInfo.Status), repo, strings.ToLower(mirrorEventsStatusInfo.RemoteUrl), mirrorEventsStatusInfo.RemoteRepoKey, federationRepoStatus.NodeId)
 		}
 	}
 	return nil
