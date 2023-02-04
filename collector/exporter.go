@@ -12,8 +12,9 @@ import (
 // Exporter collects JFrog Artifactory stats from the given URI and
 // exports them using the prometheus metrics package.
 type Exporter struct {
-	client *artifactory.Client
-	mutex  sync.RWMutex
+	client          *artifactory.Client
+	optionalMetrics config.OptionalMetrics
+	mutex           sync.RWMutex
 
 	up                                              prometheus.Gauge
 	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
@@ -24,7 +25,8 @@ type Exporter struct {
 func NewExporter(conf *config.Config) (*Exporter, error) {
 	client := artifactory.NewClient(conf)
 	return &Exporter{
-		client: client,
+		client:          client,
+		optionalMetrics: conf.OptionalMetrics,
 		up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "up",

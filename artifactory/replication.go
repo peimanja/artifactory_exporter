@@ -25,6 +25,7 @@ type Replication struct {
 	SyncStatistics                  bool   `json:"syncStatistics"`
 	Status                          string `json:"status"`
 }
+
 type Replications struct {
 	Replications []Replication
 	NodeId       string

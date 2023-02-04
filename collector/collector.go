@@ -16,6 +16,7 @@ var (
 	filestoreLabelNames   = append([]string{"storage_type", "storage_dir"}, defaultLabelNames...)
 	repoLabelNames        = append([]string{"name", "type", "package_type"}, defaultLabelNames...)
 	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp", "status"}, defaultLabelNames...)
+	federationLabelNames  = append([]string{"name", "remote_url", "remote_name"}, defaultLabelNames...)
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
@@ -63,6 +64,11 @@ var (
 		"downloaded5m":  newMetric("downloaded_5m", "artifacts", "Number of artifacts downloaded from the repository in the last 5 minutes.", repoLabelNames),
 		"downloaded15m": newMetric("downloaded_15m", "artifacts", "Number of artifacts downloaded from the repository in the last 15 minutes.", repoLabelNames),
 	}
+	federationMetrics = metrics{
+		"mirrorLag":         newMetric("mirror_lag", "federation", "Federation mirror lag in milliseconds.", federationLabelNames),
+		"unavailableMirror": newMetric("unavailable_mirror", "federation", "Unsynchronized federated mirror status", append([]string{"status"}, federationLabelNames...)),
+		"repoStatus":        newMetric("repo_status", "federation", "Synchronization status of the Federation for a repository.", append([]string{"status"}, federationLabelNames...)),
+	}
 )
 
 func init() {
@@ -87,6 +93,12 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range artifactsMetrics {
 		ch <- m
 	}
+	if e.optionalMetrics.FederationStatus {
+		for _, m := range federationMetrics {
+			ch <- m
+		}
+	}
+
 	ch <- e.up.Desc()
 	ch <- e.totalScrapes.Desc()
 	ch <- e.totalAPIErrors.Desc()
@@ -168,6 +180,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		return 0
 	}
 	e.exportArtifacts(repoSummaryList, ch)
+
+	// Get Federation Mirror metrics
+	if e.optionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
+		e.exportFederationMirrorLags(ch)
+		e.exportFederationUnavailableMirrors(ch)
+		// Get Federation Repo Status
+		e.exportFederationRepoStatus(repoSummaryList, ch)
+	}
 
 	return 1
 }
