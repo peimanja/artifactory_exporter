@@ -221,6 +221,6 @@ In most cases enabling debug logs will help to identify the issue. To enable deb
 
 #### Some metrics or labels are missing
 
-* Check the logs to see if there are any timeouts or errors while scraping for metrics. In a large Artifactory instance, it may take a long time to scrape for all metrics especially `artifactory_artifacts_*` metrics. If there are any errors, try increasing the default timeout(5s) using `--timeout` flag.
+* Check the logs to see if there are any timeouts or errors while scraping for metrics. In a large Artifactory instance, it may take a long time to scrape for all metrics especially `artifactory_artifacts_*` metrics. If there are any errors, try increasing the default timeout(5s) using `--artifactory.timeout` flag.
 * Some metrics are not available based on your version or license type. Check the [metrics](#metrics) section to see if the metric is available for your license type.
 * Some metrics are optional and are disabled by default. Check the [optional metrics](#optional-metrics) section to see available optional metrics. You can enable them using `--optional-metric=metric_name` flag. You can pass this flag multiple times to enable multiple optional metrics.
