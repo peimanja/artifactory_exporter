@@ -1,8 +1,6 @@
 package collector
 
 import (
-	"strings"
-
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -48,44 +46,5 @@ func (e *Exporter) exportFederationUnavailableMirrors(ch chan<- prometheus.Metri
 		ch <- prometheus.MustNewConstMetric(federationMetrics["unavailableMirror"], prometheus.GaugeValue, 1, unavailableMirror.Status, unavailableMirror.LocalRepoKey, unavailableMirror.RemoteUrl, unavailableMirror.RemoteRepoKey, federationUnavailableMirrors.NodeId)
 	}
 
-	return nil
-}
-
-func (e *Exporter) getFederatedRepos(repoSummary []repoSummary) []string {
-	var federatedRepos []string
-	for _, repo := range repoSummary {
-		if repo.Type == strings.ToLower(FederationRepoType) {
-			federatedRepos = append(federatedRepos, repo.Name)
-		}
-	}
-	return federatedRepos
-}
-
-func (e *Exporter) exportFederationRepoStatus(repoSummary []repoSummary, ch chan<- prometheus.Metric) error {
-	repoList := e.getFederatedRepos(repoSummary)
-	if len(repoList) == 0 {
-		level.Debug(e.logger).Log("msg", "No federated repos found")
-		return nil
-	}
-
-	for _, repo := range repoList {
-		// Fetch Federation Repo Status
-		federationRepoStatus, err := e.client.FetchFederatedRepoStatus(repo)
-		if err != nil {
-			e.totalAPIErrors.Inc()
-			return err
-		}
-
-		// Check if the respond is not empty (depends on the Artifactory version)
-		if federationRepoStatus.LocalKey == "" {
-			level.Debug(e.logger).Log("msg", "No federation repo status found", "repo", repo)
-			return nil
-		}
-
-		for _, mirrorEventsStatusInfo := range federationRepoStatus.MirrorEventsStatusInfo {
-			level.Debug(e.logger).Log("msg", "Registering metric", "metric", "federationRepoStatus", "status", mirrorEventsStatusInfo.Status, "repo", repo, "remote_url", mirrorEventsStatusInfo.RemoteUrl, "remote_name", mirrorEventsStatusInfo.RemoteRepoKey)
-			ch <- prometheus.MustNewConstMetric(federationMetrics["repoStatus"], prometheus.GaugeValue, 1, strings.ToLower(mirrorEventsStatusInfo.Status), repo, strings.ToLower(mirrorEventsStatusInfo.RemoteUrl), mirrorEventsStatusInfo.RemoteRepoKey, federationRepoStatus.NodeId)
-		}
-	}
 	return nil
 }
