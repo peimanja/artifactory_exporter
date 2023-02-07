@@ -67,7 +67,6 @@ var (
 	federationMetrics = metrics{
 		"mirrorLag":         newMetric("mirror_lag", "federation", "Federation mirror lag in milliseconds.", federationLabelNames),
 		"unavailableMirror": newMetric("unavailable_mirror", "federation", "Unsynchronized federated mirror status", append([]string{"status"}, federationLabelNames...)),
-		"repoStatus":        newMetric("repo_status", "federation", "Synchronization status of the Federation for a repository.", append([]string{"status"}, federationLabelNames...)),
 	}
 )
 
@@ -185,8 +184,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	if e.optionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)
-		// Get Federation Repo Status
-		e.exportFederationRepoStatus(repoSummaryList, ch)
 	}
 
 	return 1

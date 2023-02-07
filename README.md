@@ -188,7 +188,6 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
 | artifactory_federation_mirror_lag | Federation mirror lag in milliseconds. | `name`, `remote_url`, `remote_name` | |
 | artifactory_federation_unavailable_mirror | Unsynchronized federated mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
-| artifactory_federation_repo_status | Synchronization status of the Federation for a repository | `status`, `name`, `remote_url`, `remote_name` | |
 
 * Common labels:
   * `node_id`: Artifactory node ID that the metric is scraped from.
@@ -200,7 +199,7 @@ Some metrics are expensive to compute and are disabled by default. To enable the
 Supported optional metrics:
 
 * `replication_status` - Extracts status of replication for each repository which has replication enabled. Enabling this will add the `status` label to `artifactory_replication_enabled` metric.
-* `federation_status` - Extracts repo federation metrics. Enabling this will add three new metrics: `artifactory_federation_mirror_lag`, `artifactory_federation_mirror_status` and `artifactory_federation_unavailable_mirror`. Please note that these metrics are only available in Artifactory Enterprise Plus and version 7.18.3 and above.
+* `federation_status` - Extracts federation metrics. Enabling this will add two new metrics: `artifactory_federation_mirror_lag`, and `artifactory_federation_unavailable_mirror`. Please note that these metrics are only available in Artifactory Enterprise Plus and version 7.18.3 and above.
 
 ### Grafana Dashboard
 
