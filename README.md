@@ -197,6 +197,7 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 Some metrics are expensive to compute and are disabled by default. To enable them, use `--optional-metric=metric_name` flag. Use this with caution as it may impact the performance in Artifactory instances with many repositories.
 
 Supported optional metrics:
+
 * `artifacts` - Extracts number of artifacts created/downloaded for each repository. Enabling this will add `artifactory_artifacts_*` metrics. Please note that on large Artifactory instances, this may impact the performance.
 * `replication_status` - Extracts status of replication for each repository which has replication enabled. Enabling this will add the `status` label to `artifactory_replication_enabled` metric.
 * `federation_status` - Extracts federation metrics. Enabling this will add two new metrics: `artifactory_federation_mirror_lag`, and `artifactory_federation_unavailable_mirror`. Please note that these metrics are only available in Artifactory Enterprise Plus and version 7.18.3 and above.
