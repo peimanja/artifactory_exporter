@@ -34,6 +34,7 @@ type Credentials struct {
 }
 
 type OptionalMetrics struct {
+	Artifacts         bool
 	ReplicationStatus bool
 	FederationStatus  bool
 }
@@ -81,6 +82,8 @@ func NewConfig() (*Config, error) {
 	optMetrics := OptionalMetrics{}
 	for _, metric := range *optionalMetrics {
 		switch metric {
+		case "artifacts":
+			optMetrics.Artifacts = true
 		case "replication_status":
 			optMetrics.ReplicationStatus = true
 		case "federation_status":

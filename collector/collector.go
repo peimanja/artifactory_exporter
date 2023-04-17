@@ -89,8 +89,10 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range systemMetrics {
 		ch <- m
 	}
-	for _, m := range artifactsMetrics {
-		ch <- m
+	if e.optionalMetrics.Artifacts {
+		for _, m := range artifactsMetrics {
+			ch <- m
+		}
 	}
 	if e.optionalMetrics.FederationStatus {
 		for _, m := range federationMetrics {
@@ -174,11 +176,13 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.exportRepo(repoSummaryList, ch)
 
 	// Get Downloaded and Created items for all repo in the last 1 and 5 minutes and add it to repoSummaryList
-	repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
-	if err != nil {
-		return 0
+	if e.optionalMetrics.Artifacts {
+		repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
+		if err != nil {
+			return 0
+		}
+		e.exportArtifacts(repoSummaryList, ch)
 	}
-	e.exportArtifacts(repoSummaryList, ch)
 
 	// Get Federation Mirror metrics
 	if e.optionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
