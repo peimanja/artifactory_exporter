@@ -3,7 +3,7 @@ package collector
 import (
 	"sync"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/peimanja/artifactory_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"

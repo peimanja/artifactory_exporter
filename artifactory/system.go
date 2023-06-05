@@ -3,7 +3,7 @@ package artifactory
 import (
 	"encoding/json"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 )
 
 const (
