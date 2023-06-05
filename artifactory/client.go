@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 	"github.com/peimanja/artifactory_exporter/config"
 )
 

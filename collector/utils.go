@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 )
 
 func (e *Exporter) removeCommas(str string) (float64, error) {

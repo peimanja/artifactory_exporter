@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 )
 
 const replicationEndpoint = "replications"

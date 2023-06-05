@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 	"github.com/peimanja/artifactory_exporter/collector"
 	"github.com/peimanja/artifactory_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"

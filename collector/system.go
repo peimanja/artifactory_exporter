@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )

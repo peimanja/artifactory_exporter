@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"

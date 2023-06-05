@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 )
 
 // APIErrors represents Artifactory API Error response
