@@ -22,7 +22,7 @@ var (
 	optionalMetrics = kingpin.Flag("optional-metric", "optional metric to be enabled. Pass multiple times to enable multiple optional metrics.").PlaceHolder("metric-name").Strings()
 )
 
-var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status"}
+var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics"}
 
 // Credentials represents Username and Password or API Key for
 // Artifactory Authentication
@@ -37,6 +37,7 @@ type OptionalMetrics struct {
 	Artifacts         bool
 	ReplicationStatus bool
 	FederationStatus  bool
+	OpenMetrics			 bool
 }
 
 // Config represents all configuration options for running the Exporter.
@@ -88,6 +89,8 @@ func NewConfig() (*Config, error) {
 			optMetrics.ReplicationStatus = true
 		case "federation_status":
 			optMetrics.FederationStatus = true
+		case "open_metrics":
+			optMetrics.OpenMetrics = true
 		default:
 			return nil, fmt.Errorf("unknown optional metric: %s. Valid optional metrics are: %s", metric, optionalMetricsList)
 		}

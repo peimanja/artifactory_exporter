@@ -68,6 +68,9 @@ var (
 		"mirrorLag":         newMetric("mirror_lag", "federation", "Federation mirror lag in milliseconds.", federationLabelNames),
 		"unavailableMirror": newMetric("unavailable_mirror", "federation", "Unsynchronized federated mirror status", append([]string{"status"}, federationLabelNames...)),
 	}
+	openMetrics = metrics{
+		"openMetrics": newMetric("open_metrics", "openmetrics", "OpenMetrics proxied from Artifactory", append([]string{"metrics"}, defaultLabelNames...)),
+	}
 )
 
 func init() {
@@ -96,6 +99,11 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	}
 	if e.optionalMetrics.FederationStatus {
 		for _, m := range federationMetrics {
+			ch <- m
+		}
+	}
+	if e.optionalMetrics.OpenMetrics {
+		for _, m := range openMetrics {
 			ch <- m
 		}
 	}
@@ -149,6 +157,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 			}
 		}
 		err = e.exportReplications(ch)
+		if err != nil {
+			return 0
+		}
+	}
+
+	// Collect and export open metrics
+	if e.optionalMetrics.OpenMetrics {
+		err = e.exportOpenMetrics(ch)
 		if err != nil {
 			return 0
 		}
