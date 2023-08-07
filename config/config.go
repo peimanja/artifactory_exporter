@@ -37,7 +37,7 @@ type OptionalMetrics struct {
 	Artifacts         bool
 	ReplicationStatus bool
 	FederationStatus  bool
-	OpenMetrics	      bool
+	OpenMetrics				bool
 }
 
 // Config represents all configuration options for running the Exporter.
