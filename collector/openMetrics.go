@@ -18,10 +18,10 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	level.Debug(e.logger).Log("msg", "OpenMetrics from Artifactory util", "body", openMetrics.Metric)
+	level.Debug(e.logger).Log("msg", "OpenMetrics from Artifactory util", "body", openMetrics.PromMetrics)
 
 	// assign openMetrics.Metric to a string variable
-	openMetricsString := openMetrics.Metric
+	openMetricsString := openMetrics.PromMetrics
 
 	parser := expfmt.TextParser{}
 	metrics, err := parser.TextToMetricFamilies(strings.NewReader(openMetricsString))
@@ -32,12 +32,11 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 
 	for _, family := range metrics {
 		for _, metric := range family.Metric {
-			// create a new metric descriptor
+			// create a new descriptor
 			desc := prometheus.NewDesc(
-				prometheus.BuildFQName("remote", "openmetric", family.GetName()),
+				prometheus.BuildFQName("jfrog", "openmetrics", *family.Name),
 				family.GetHelp(),
-				nil,
-				nil,
+				nil, nil,
 			)
 
 			// create a new metric and collect it
@@ -46,10 +45,6 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 				ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, metric.GetCounter().GetValue())
 			case io_prometheus_client.MetricType_GAUGE:
 				ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, metric.GetGauge().GetValue())
-				// case textparse.MetricTypeHistogram:
-				// 	// handle histograms
-				// case textparse.MetricTypeSummary:
-				// 	// handle summaries
 			}
 		}
 	}
