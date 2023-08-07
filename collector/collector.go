@@ -2,6 +2,7 @@ package collector
 
 import (
 	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
 )
@@ -68,7 +69,7 @@ var (
 		"unavailableMirror": newMetric("unavailable_mirror", "federation", "Unsynchronized federated mirror status", append([]string{"status"}, federationLabelNames...)),
 	}
 	openMetrics = metrics{
-		"openMetrics": newMetric("open_metrics", "openmetrics", "OpenMetrics proxied from Artifactory", append([]string{"metrics"}, defaultLabelNames...)),
+		"openMetrics": newMetric("open_metrics", "openmetrics", "OpenMetrics proxied from JFrog Platform", defaultLabelNames),
 	}
 )
 

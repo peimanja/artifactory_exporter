@@ -32,11 +32,18 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 
 	for _, family := range metrics {
 		for _, metric := range family.Metric {
+			// create labels map
+			labels := make(map[string]string)
+			for _, label := range metric.Label {
+				labels[*label.Name] = *label.Value
+			}
+
 			// create a new descriptor
 			desc := prometheus.NewDesc(
-				prometheus.BuildFQName("jfrog", "openmetrics", *family.Name),
+				family.GetName(),
 				family.GetHelp(),
-				nil, nil,
+				nil,
+				labels,
 			)
 
 			// create a new metric and collect it
