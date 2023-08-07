@@ -2,7 +2,6 @@ package collector
 
 import (
 	"strings"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
 )
