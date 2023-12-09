@@ -4,9 +4,10 @@ import (
 	"sync"
 
 	"github.com/go-kit/log"
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/peimanja/artifactory_exporter/config"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Exporter collects JFrog Artifactory stats from the given URI and
