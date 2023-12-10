@@ -6,12 +6,13 @@ import (
 	"os"
 
 	"github.com/go-kit/log/level"
-	"github.com/peimanja/artifactory_exporter/collector"
-	"github.com/peimanja/artifactory_exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+
+	"github.com/peimanja/artifactory_exporter/collector"
+	"github.com/peimanja/artifactory_exporter/config"
 )
 
 func main() {

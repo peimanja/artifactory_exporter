@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/go-kit/log/level"
-	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/peimanja/artifactory_exporter/artifactory"
 )
 
 type user struct {

@@ -6,6 +6,7 @@ require (
 	github.com/go-kit/log v0.1.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.11.1
+	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.26.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
@@ -20,7 +21,6 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect

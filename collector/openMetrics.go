@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	ioPrometheusClient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 )
 
@@ -48,9 +48,9 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 
 			// create a new metric and collect it
 			switch family.GetType() {
-			case io_prometheus_client.MetricType_COUNTER:
+			case ioPrometheusClient.MetricType_COUNTER:
 				ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, metric.GetCounter().GetValue())
-			case io_prometheus_client.MetricType_GAUGE:
+			case ioPrometheusClient.MetricType_GAUGE:
 				ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, metric.GetGauge().GetValue())
 			}
 		}
