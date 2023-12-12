@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
 
 	"github.com/peimanja/artifactory_exporter/collector"
@@ -18,7 +18,10 @@ import (
 func main() {
 	conf, err := config.NewConfig()
 	if err != nil {
-		log.Errorf("Error creating the config. err: %s", err)
+		slog.Error(
+			"Error creating the config.",
+			"err", err.Error(),
+		)
 		os.Exit(1)
 	}
 
