@@ -1,6 +1,6 @@
 module github.com/peimanja/artifactory_exporter
 
-go 1.18
+go 1.21
 
 require (
 	github.com/go-kit/log v0.1.0
