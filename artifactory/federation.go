@@ -2,8 +2,6 @@ package artifactory
 
 import (
 	"encoding/json"
-
-	"github.com/go-kit/log/level"
 )
 
 const federationMirrorsLagEndpoint = "federation/status/mirrorsLag"
@@ -34,7 +32,7 @@ type MirrorLags struct {
 // FetchMirrorLags makes the API call to federation/status/mirrorsLag endpoint and returns []MirrorLag
 func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	var mirrorLags MirrorLags
-	level.Debug(c.logger).Log("msg", "Fetching mirror lags")
+	c.logger.Debug("Fetching mirror lags")
 	resp, err := c.FetchHTTP(federationMirrorsLagEndpoint)
 	if err != nil {
 		if err.(*APIError).status == 404 {
@@ -45,7 +43,7 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	mirrorLags.NodeId = resp.NodeId
 
 	if err := json.Unmarshal(resp.Body, &mirrorLags.MirrorLags); err != nil {
-		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal mirror lags respond")
+		c.logger.Error("There was an issue when try to unmarshal mirror lags respond")
 		return mirrorLags, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: federationMirrorsLagEndpoint,
@@ -71,7 +69,7 @@ type UnavailableMirrors struct {
 // FetchUnavailableMirrors makes the API call to federation/status/unavailableMirrors endpoint and returns []UnavailableMirror
 func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 	var unavailableMirrors UnavailableMirrors
-	level.Debug(c.logger).Log("msg", "Fetching unavailable mirrors")
+	c.logger.Debug("Fetching unavailable mirrors")
 	resp, err := c.FetchHTTP(federationUnavailableMirrorsEndpoint)
 	if err != nil {
 		if err.(*APIError).status == 404 {
@@ -82,7 +80,7 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 	unavailableMirrors.NodeId = resp.NodeId
 
 	if err := json.Unmarshal(resp.Body, &unavailableMirrors.UnavailableMirrors); err != nil {
-		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal unavailable mirrors respond")
+		c.logger.Error("There was an issue when try to unmarshal unavailable mirrors respond")
 		return unavailableMirrors, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: federationUnavailableMirrorsEndpoint,

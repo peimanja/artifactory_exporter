@@ -2,8 +2,6 @@ package artifactory
 
 import (
 	"encoding/json"
-
-	"github.com/go-kit/log/level"
 )
 
 const (
@@ -43,14 +41,14 @@ type StorageInfo struct {
 // FetchStorageInfo makes the API call to storageinfo endpoint and returns StorageInfo
 func (c *Client) FetchStorageInfo() (StorageInfo, error) {
 	var storageInfo StorageInfo
-	level.Debug(c.logger).Log("msg", "Fetching storage info stats")
+	c.logger.Debug("Fetching storage info stats")
 	resp, err := c.FetchHTTP(storageInfoEndpoint)
 	if err != nil {
 		return storageInfo, err
 	}
 	storageInfo.NodeId = resp.NodeId
 	if err := json.Unmarshal(resp.Body, &storageInfo); err != nil {
-		level.Error(c.logger).Log("msg", "There was an issue when try to unmarshal storageInfo respond")
+		c.logger.Error("There was an issue when try to unmarshal storageInfo respond")
 		return storageInfo, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: storageInfoEndpoint,

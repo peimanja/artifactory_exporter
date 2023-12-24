@@ -2,9 +2,8 @@ package artifactory
 
 import (
 	"crypto/tls"
+	"log/slog"
 	"net/http"
-
-	"github.com/go-kit/log"
 
 	"github.com/peimanja/artifactory_exporter/config"
 )
@@ -16,7 +15,7 @@ type Client struct {
 	cred            config.Credentials
 	optionalMetrics config.OptionalMetrics
 	client          *http.Client
-	logger          log.Logger
+	logger          *slog.Logger
 }
 
 // NewClient returns an initialized Artifactory HTTP Client.

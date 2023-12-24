@@ -2,18 +2,20 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	l "github.com/peimanja/artifactory_exporter/logger"
 )
 
 var (
+	flagLogFormat   = kingpin.Flag(l.FormatFlagName, l.FormatFlagHelp).Default(l.FormatDefault).Enum(l.FormatsAvailable...)
+	flagLogLevel    = kingpin.Flag(l.LevelFlagName, l.LevelFlagHelp).Default(l.LevelFlagName).Enum(l.LevelsAvailable...)
 	listenAddress   = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
 	metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
 	artiScrapeURI   = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape JFrog Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
@@ -37,7 +39,7 @@ type OptionalMetrics struct {
 	Artifacts         bool
 	ReplicationStatus bool
 	FederationStatus  bool
-	OpenMetrics        bool
+	OpenMetrics       bool
 }
 
 // Config represents all configuration options for running the Exporter.
@@ -49,18 +51,15 @@ type Config struct {
 	ArtiSSLVerify   bool
 	ArtiTimeout     time.Duration
 	OptionalMetrics OptionalMetrics
-	Logger          log.Logger
+	Logger          *slog.Logger
 }
 
-// NewConfig Creates new Artifactory exporter Config
+// NewConfig Creates Config for Artifactory exporter
 func NewConfig() (*Config, error) {
 
-	promlogConfig := &promlog.Config{}
-	flag.AddFlags(kingpin.CommandLine, promlogConfig)
 	kingpin.HelpFlag.Short('h')
 	kingpin.Version(version.Info() + " " + version.BuildContext())
 	kingpin.Parse()
-	logger := promlog.New(promlogConfig)
 
 	var credentials Credentials
 	err := envconfig.Process("", &credentials)
@@ -96,6 +95,12 @@ func NewConfig() (*Config, error) {
 		}
 	}
 
+	logger := l.New(
+		l.Config{
+			Format: *flagLogFormat,
+			Level:  *flagLogLevel,
+		},
+	)
 	return &Config{
 		ListenAddress:   *listenAddress,
 		MetricsPath:     *metricsPath,

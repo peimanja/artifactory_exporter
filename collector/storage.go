@@ -3,13 +3,12 @@ package collector
 import (
 	"strings"
 
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/peimanja/artifactory_exporter/artifactory"
 )
 
-const calculateValueError = "There was an issue calculating the value"
+const msgErrCalcVal = "There was an issue calculating the value"
 
 func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count string, nodeId string, ch chan<- prometheus.Metric) {
 	if count == "" {
@@ -19,10 +18,18 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 	value, err := e.removeCommas(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
+		e.logger.Error(
+			msgErrCalcVal,
+			"metric", metricName,
+			"err", err.Error(),
+		)
 		return
 	}
-	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
+	e.logger.Debug(
+		"Registering metric",
+		"metric", metricName,
+		"value", value,
+	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, nodeId)
 }
 
@@ -34,10 +41,18 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Error(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
+		e.logger.Error(
+			msgErrCalcVal,
+			"metric", metricName,
+			"err", err.Error(),
+		)
 		return
 	}
-	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
+	e.logger.Debug(
+		"Registering metric",
+		"metric", metricName,
+		"value", value,
+	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, nodeId)
 }
 
@@ -49,10 +64,18 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 	value, err := e.bytesConverter(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
-		level.Debug(e.logger).Log("msg", calculateValueError, "metric", metricName, "err", err)
+		e.logger.Warn(
+			msgErrCalcVal,
+			"metric", metricName,
+			"err", err.Error(),
+		)
 		return
 	}
-	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", value)
+	e.logger.Debug(
+		"Registering metric",
+		"metric", metricName,
+		"value", value,
+	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir, nodeId)
 }
 
@@ -78,7 +101,7 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 	var err error
 	rs := repoSummary{}
 	repoSummaryList := []repoSummary{}
-	level.Debug(e.logger).Log("msg", "Extracting repo summaries")
+	e.logger.Debug("Extracting repo summaries")
 	for _, repo := range storageInfo.RepositoriesSummaryList {
 		if repo.RepoKey == "TOTAL" {
 			continue
@@ -91,7 +114,11 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		rs.PackageType = strings.ToLower(repo.PackageType)
 		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
 		if err != nil {
-			level.Debug(e.logger).Log("msg", "There was an issue parsing repo UsedSpace", "repo", repo.RepoKey, "err", err)
+			e.logger.Warn(
+				"There was an issue parsing repo UsedSpace",
+				"repo", repo.RepoKey,
+				"err", err.Error(),
+			)
 			e.jsonParseFailures.Inc()
 			return repoSummaryList, err
 		}
@@ -100,7 +127,11 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		} else {
 			rs.Percentage, err = e.removeCommas(repo.Percentage)
 			if err != nil {
-				level.Debug(e.logger).Log("msg", "There was an issue parsing repo Percentage", "repo", repo.RepoKey, "err", err)
+				e.logger.Warn(
+					"There was an issue parsing repo Percentage",
+					"repo", repo.RepoKey,
+					"err", err.Error(),
+				)
 				e.jsonParseFailures.Inc()
 				return repoSummaryList, err
 			}
@@ -116,19 +147,54 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 		for metricName, metric := range storageMetrics {
 			switch metricName {
 			case "repoUsed":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.UsedSpace)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.UsedSpace,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.UsedSpace, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoFolders":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.FoldersCount)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.FoldersCount,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FoldersCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoItems":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.ItemsCount)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.ItemsCount,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.ItemsCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoFiles":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.FilesCount)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.FilesCount,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FilesCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoPercentage":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.Percentage)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.Percentage,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.Percentage, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			}
 		}

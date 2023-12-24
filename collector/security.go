@@ -3,7 +3,6 @@ package collector
 import (
 	"fmt"
 
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/peimanja/artifactory_exporter/artifactory"
@@ -18,7 +17,7 @@ type user struct {
 type realmUserCounts map[string]float64
 
 func (e *Exporter) countUsersPerRealm(users []artifactory.User) realmUserCounts {
-	level.Debug(e.logger).Log("msg", "Counting users")
+	e.logger.Debug("Counting users")
 	usersPerRealm := realmUserCounts{}
 	for _, user := range users {
 		usersPerRealm[user.Realm]++
@@ -30,7 +29,10 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 	// Fetch Artifactory Users
 	users, err := e.client.FetchUsers()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching security/users",
+			"err", err.Error(),
+		)
 		e.totalAPIErrors.Inc()
 		return err
 	}
@@ -43,11 +45,16 @@ func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, 
 
 	if totalUserCount == 0 {
 		e.jsonParseFailures.Inc()
-		level.Error(e.logger).Log("err", "There was an issue getting users respond")
+		e.logger.Error("There was an issue getting users respond")
 		return fmt.Errorf("There was an issue getting users respond")
 	}
 	for realm, count := range usersPerRealm {
-		level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "realm", realm, "value", count)
+		e.logger.Debug(
+			"Registering metric",
+			"metric", metricName,
+			"realm", realm,
+			"value", count,
+		)
 		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, count, realm, users.NodeId)
 	}
 	return nil
@@ -62,12 +69,19 @@ func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch c
 	// Fetch Artifactory groups
 	groups, err := e.client.FetchGroups()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching security/users", "err", err)
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching security/users",
+			"err", err.Error(),
+		)
 		e.totalAPIErrors.Inc()
 		return err
 	}
 
-	level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "value", float64(len(groups.Groups)))
+	e.logger.Debug(
+		"Registering metric",
+		"metric", metricName,
+		"value", float64(len(groups.Groups)), // What for log as float?Int is not precise enough?
+	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups.Groups)), groups.NodeId)
 	return nil
 }

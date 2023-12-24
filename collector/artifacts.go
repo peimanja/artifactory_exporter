@@ -3,7 +3,7 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-kit/log/level"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -20,14 +20,21 @@ type artifactQueryResult struct {
 func (e *Exporter) findArtifacts(period string, queryType string) (artifactQueryResult, error) {
 	var query string
 	artifacts := artifactQueryResult{}
-	level.Debug(e.logger).Log("msg", "Finding all artifacts", "period", period, "queryType", queryType)
+	e.logger.Debug(
+		"Finding all artifacts",
+		"period", period,
+		"queryType", queryType,
+	)
 	switch queryType {
 	case "created":
 		query = fmt.Sprintf("items.find({\"modified\" : {\"$last\" : \"%s\"}}).include(\"name\", \"repo\")", period)
 	case "downloaded":
 		query = fmt.Sprintf("items.find({\"stat.downloaded\" : {\"$last\" : \"%s\"}}).include(\"name\", \"repo\")", period)
 	default:
-		level.Error(e.logger).Log("err", "Query Type is not supported", "query", queryType)
+		e.logger.Error(
+			"Query Type is not supported",
+			"query", queryType,
+		)
 		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
 	}
 	resp, err := e.client.QueryAQL([]byte(query))
@@ -37,7 +44,12 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 	}
 	artifacts.NodeId = resp.NodeId
 	if err := json.Unmarshal(resp.Body, &artifacts); err != nil {
-		level.Warn(e.logger).Log("msg", "There was an error when trying to unmarshal AQL response", "queryType", queryType, "period", period, "error", err)
+		e.logger.Warn(
+			"There was an error when trying to unmarshal AQL response",
+			"queryType", queryType,
+			"period", period,
+			"error", err.Error(),
+		)
 		e.jsonParseFailures.Inc()
 		return artifacts, err
 	}
@@ -117,22 +129,64 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 		for metricName, metric := range artifactsMetrics {
 			switch metricName {
 			case "created1m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreate1m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalCreate1m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreate1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created5m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreated5m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalCreated5m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created15m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalCreated15m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalCreated15m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded1m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded1m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalDownloaded1m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded5m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded5m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalDownloaded5m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded15m":
-				level.Debug(e.logger).Log("msg", "Registering metric", "metric", metricName, "repo", repoSummary.Name, "type", repoSummary.Type, "package_type", repoSummary.PackageType, "value", repoSummary.TotalDownloaded15m)
+				e.logger.Debug(
+					"Registering metric",
+					"metric", metricName,
+					"repo", repoSummary.Name,
+					"type", repoSummary.Type,
+					"package_type", repoSummary.PackageType,
+					"value", repoSummary.TotalDownloaded15m,
+				)
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			}
 		}

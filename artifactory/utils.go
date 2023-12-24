@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/go-kit/log/level"
 )
 
 // APIErrors represents Artifactory API Error response
@@ -23,7 +21,10 @@ type ApiResponse struct {
 func (c *Client) makeRequest(method string, path string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, bytes.NewBuffer(body))
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error creating request", "err", err.Error())
+		c.logger.Error(
+			"There was an error creating request",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	switch c.authMethod {
@@ -41,10 +42,17 @@ func (c *Client) makeRequest(method string, path string, body []byte) (*http.Res
 func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	var response ApiResponse
 	fullPath := fmt.Sprintf("%s/api/%s", c.URI, path)
-	level.Debug(c.logger).Log("msg", "Fetching http", "path", fullPath)
+	c.logger.Debug(
+		"Fetching http",
+		"path", fullPath,
+	)
 	resp, err := c.makeRequest("GET", fullPath, nil)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
+		c.logger.Error(
+			"There was an error making API call",
+			"endpoint", fullPath,
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.NodeId = resp.Header.Get("x-artifactory-node-id")
@@ -54,13 +62,21 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
-			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
+			c.logger.Error(
+				"There was an error when trying to unmarshal the API Error",
+				"err", err,
+			)
 			return nil, &UnmarshalError{
 				message:  err.Error(),
 				endpoint: fullPath,
 			}
 		}
-		level.Warn(c.logger).Log("msg", "The endpoint does not exist", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status", 404)
+		c.logger.Warn(
+			"The endpoint does not exist",
+			"endpoint", fullPath,
+			"err", fmt.Sprintf("%v", apiErrors.Errors),
+			"status", 404,
+		)
 		return nil, &APIError{
 			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
@@ -72,13 +88,21 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
-			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
+			c.logger.Error(
+				"There was an error when trying to unmarshal the API Error",
+				"err", err.Error(),
+			)
 			return nil, &UnmarshalError{
 				message:  err.Error(),
 				endpoint: fullPath,
 			}
 		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
+		c.logger.Error(
+			"There was an error making API call",
+			"endpoint", fullPath,
+			"err", fmt.Sprintf("%v", apiErrors.Errors),
+			"status", "is missing and should be provided", // Value from Kacper Perschke and should be changed to significant!
+		)
 		return nil, &APIError{
 			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
@@ -87,7 +111,10 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
+		c.logger.Error(
+			"There was an error reading response body",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.Body = bodyBytes
@@ -99,10 +126,17 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 	var response ApiResponse
 	fullPath := fmt.Sprintf("%s/api/search/aql", c.URI)
-	level.Debug(c.logger).Log("msg", "Running AQL query", "path", fullPath)
+	c.logger.Debug(
+		"Running AQL query",
+		"path", fullPath,
+	)
 	resp, err := c.makeRequest("POST", fullPath, query)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
+		c.logger.Error(
+			"There was an error making API call",
+			"endpoint", fullPath,
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.NodeId = resp.Header.Get("x-artifactory-node-id")
@@ -116,7 +150,12 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 				endpoint: fullPath,
 			}
 		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
+		c.logger.Error(
+			"There was an error making API call",
+			"endpoint", fullPath,
+			"err", fmt.Sprintf("%v", apiErrors.Errors),
+			"status", "evaporated?", // Value from Kacper Perschke and should be changed to significant!
+		)
 		return nil, &APIError{
 			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
@@ -125,7 +164,10 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
+		c.logger.Error(
+			"There was an error reading response body",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.Body = bodyBytes
