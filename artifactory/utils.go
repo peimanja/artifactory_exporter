@@ -8,6 +8,10 @@ import (
 	"net/http"
 )
 
+const (
+	msgErrAPICall = "There was an error making API call" // https://github.com/peimanja/artifactory_exporter/pull/121/checks?check_run_id=20136336585
+)
+
 // APIErrors represents Artifactory API Error response
 type APIErrors struct {
 	Errors interface{}
@@ -49,7 +53,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	resp, err := c.makeRequest("GET", fullPath, nil)
 	if err != nil {
 		c.logger.Error(
-			"There was an error making API call",
+			msgErrAPICall,
 			"endpoint", fullPath,
 			"err", err.Error(),
 		)
@@ -98,7 +102,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 			}
 		}
 		c.logger.Error(
-			"There was an error making API call",
+			msgErrAPICall,
 			"endpoint", fullPath,
 			"err", fmt.Sprintf("%v", apiErrors.Errors),
 			"status", "is missing and should be provided", // Value from Kacper Perschke and should be changed to significant!
@@ -133,7 +137,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 	resp, err := c.makeRequest("POST", fullPath, query)
 	if err != nil {
 		c.logger.Error(
-			"There was an error making API call",
+			msgErrAPICall,
 			"endpoint", fullPath,
 			"err", err.Error(),
 		)
@@ -151,7 +155,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 			}
 		}
 		c.logger.Error(
-			"There was an error making API call",
+			msgErrAPICall,
 			"endpoint", fullPath,
 			"err", fmt.Sprintf("%v", apiErrors.Errors),
 			"status", "evaporated?", // Value from Kacper Perschke and should be changed to significant!
