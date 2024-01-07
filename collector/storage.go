@@ -26,7 +26,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		return
 	}
 	e.logger.Debug(
-		"Registering metric",
+		logDbgMsgRegMetric,
 		"metric", metricName,
 		"value", value,
 	)
@@ -49,7 +49,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		return
 	}
 	e.logger.Debug(
-		"Registering metric",
+		logDbgMsgRegMetric,
 		"metric", metricName,
 		"value", value,
 	)
@@ -72,7 +72,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		return
 	}
 	e.logger.Debug(
-		"Registering metric",
+		logDbgMsgRegMetric,
 		"metric", metricName,
 		"value", value,
 	)
@@ -148,7 +148,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 			switch metricName {
 			case "repoUsed":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -158,7 +158,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.UsedSpace, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoFolders":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -168,7 +168,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FoldersCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoItems":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -178,7 +178,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.ItemsCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoFiles":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -188,7 +188,7 @@ func (e *Exporter) exportRepo(repoSummaries []repoSummary, ch chan<- prometheus.
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.FilesCount, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "repoPercentage":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,

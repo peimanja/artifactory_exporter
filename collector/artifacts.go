@@ -130,7 +130,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 			switch metricName {
 			case "created1m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -140,7 +140,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreate1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created5m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -150,7 +150,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "created15m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -160,7 +160,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded1m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -170,7 +170,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded5m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,
@@ -180,7 +180,7 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 			case "downloaded15m":
 				e.logger.Debug(
-					"Registering metric",
+					logDbgMsgRegMetric,
 					"metric", metricName,
 					"repo", repoSummary.Name,
 					"type", repoSummary.Type,

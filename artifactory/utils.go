@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	msgErrAPICall    = "There was an error making API call"
-	msgErrUnmarshall = "There was an error when trying to unmarshal the API Error"
+	logMsgErrAPICall    = "There was an error making API call"
+	logMsgErrUnmarshall = "There was an error when trying to unmarshal the API Error"
 )
 
 // APIErrors represents Artifactory API Error response
@@ -64,7 +64,7 @@ func (c *Client) procRespErr(resp *http.Response, fPath string) (*ApiResponse, e
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
 		c.logger.Error(
-			msgErrUnmarshall,
+			logMsgErrUnmarshall,
 			"err", err.Error(),
 		)
 		return nil, &UnmarshalError{
@@ -73,7 +73,7 @@ func (c *Client) procRespErr(resp *http.Response, fPath string) (*ApiResponse, e
 		}
 	}
 	c.logger.Error(
-		msgErrAPICall,
+		logMsgErrAPICall,
 		"endpoint", fPath,
 		"err", fmt.Sprintf("%v", apiErrors.Errors),
 		"status", resp.StatusCode,
@@ -96,7 +96,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	resp, err := c.makeRequest("GET", fullPath, nil)
 	if err != nil {
 		c.logger.Error(
-			msgErrAPICall,
+			logMsgErrAPICall,
 			"endpoint", fullPath,
 			"err", err.Error(),
 		)
@@ -110,7 +110,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
 			c.logger.Error(
-				msgErrUnmarshall,
+				logMsgErrUnmarshall,
 				"err", err,
 			)
 			return nil, &UnmarshalError{
@@ -159,7 +159,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 	resp, err := c.makeRequest("POST", fullPath, query)
 	if err != nil {
 		c.logger.Error(
-			msgErrAPICall,
+			logMsgErrAPICall,
 			"endpoint", fullPath,
 			"err", err.Error(),
 		)
