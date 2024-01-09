@@ -1,9 +1,9 @@
 package collector
 
 import (
+	"log/slog"
 	"sync"
 
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/peimanja/artifactory_exporter/artifactory"
@@ -19,7 +19,7 @@ type Exporter struct {
 
 	up                                              prometheus.Gauge
 	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
-	logger                                          log.Logger
+	logger                                          *slog.Logger
 }
 
 // NewExporter returns an initialized Exporter.

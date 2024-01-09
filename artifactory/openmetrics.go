@@ -1,9 +1,5 @@
 package artifactory
 
-import (
-	"github.com/go-kit/log/level"
-)
-
 const openMetricsEndpoint = "v1/metrics"
 
 type OpenMetrics struct {
@@ -14,7 +10,7 @@ type OpenMetrics struct {
 // FetchOpenMetrics makes the API call to open metrics endpoint and returns all the open metrics
 func (c *Client) FetchOpenMetrics() (OpenMetrics, error) {
 	var openMetrics OpenMetrics
-	level.Debug(c.logger).Log("msg", "Fetching openMetrics")
+	c.logger.Debug("Fetching openMetrics")
 	resp, err := c.FetchHTTP(openMetricsEndpoint)
 	if err != nil {
 		if err.(*APIError).status == 404 {
@@ -23,7 +19,10 @@ func (c *Client) FetchOpenMetrics() (OpenMetrics, error) {
 		return openMetrics, err
 	}
 
-	level.Debug(c.logger).Log("msg", "OpenMetrics from Artifactory", "body", string(resp.Body))
+	c.logger.Debug(
+		"OpenMetrics from Artifactory",
+		"body", string(resp.Body),
+	)
 
 	openMetrics.NodeId = resp.NodeId
 	openMetrics.PromMetrics = string(resp.Body)

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/peimanja/artifactory_exporter/artifactory"
@@ -13,13 +12,19 @@ import (
 func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prometheus.Metric) error {
 	health, err := e.client.FetchHealth()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/ping", "err", err)
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching system/ping",
+			"err", err.Error(),
+		)
 		e.totalAPIErrors.Inc()
 		return err
 	}
 	buildInfo, err := e.client.FetchBuildInfo()
 	if err != nil {
-		level.Error(e.logger).Log("msg", "Couldn't scrape Artifactory when fetching system/version", "err", err)
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching system/version",
+			"err", err.Error(),
+		)
 		e.totalAPIErrors.Inc()
 		return err
 	}
@@ -39,7 +44,10 @@ func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prome
 				validThrough = timeNow
 			default:
 				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
-					level.Warn(e.logger).Log("msg", "Couldn't parse Artifactory license ValidThrough", "err", err)
+					e.logger.Warn(
+						"Couldn't parse Artifactory license ValidThrough",
+						"err", err.Error(),
+					)
 					validThrough = timeNow
 				} else {
 					validThrough = float64(validThroughTime.Unix())

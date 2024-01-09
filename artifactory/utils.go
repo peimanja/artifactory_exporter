@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"slices"
+)
 
-	"github.com/go-kit/log/level"
+const (
+	logMsgErrAPICall    = "There was an error making API call"
+	logMsgErrUnmarshall = "There was an error when trying to unmarshal the API Error"
 )
 
 // APIErrors represents Artifactory API Error response
@@ -20,10 +24,28 @@ type ApiResponse struct {
 	NodeId string
 }
 
+var (
+	httpSuccCodes = []int{ // https://go.dev/src/net/http/status.go
+		http.StatusOK,                   // 200
+		http.StatusCreated,              // 201
+		http.StatusAccepted,             // 202
+		http.StatusNonAuthoritativeInfo, // 203
+		http.StatusNoContent,            // 204
+		http.StatusResetContent,         // 205
+		http.StatusPartialContent,       // 206
+		http.StatusMultiStatus,          // 207
+		http.StatusAlreadyReported,      // 208
+		http.StatusIMUsed,               // 226
+	}
+)
+
 func (c *Client) makeRequest(method string, path string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, bytes.NewBuffer(body))
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error creating request", "err", err.Error())
+		c.logger.Error(
+			"There was an error creating request",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	switch c.authMethod {
@@ -37,57 +59,88 @@ func (c *Client) makeRequest(method string, path string, body []byte) (*http.Res
 	return c.client.Do(req)
 }
 
+func (c *Client) procRespErr(resp *http.Response, fPath string) (*ApiResponse, error) {
+	var apiErrors APIErrors
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
+		c.logger.Error(
+			logMsgErrUnmarshall,
+			"err", err.Error(),
+		)
+		return nil, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: fPath,
+		}
+	}
+	c.logger.Error(
+		logMsgErrAPICall,
+		"endpoint", fPath,
+		"err", fmt.Sprintf("%v", apiErrors.Errors),
+		"status", resp.StatusCode,
+	)
+	return nil, &APIError{
+		message:  fmt.Sprintf("%v", apiErrors.Errors),
+		endpoint: fPath,
+		// status:   resp.StatusCode, // Maybe it would be worth returning it too? As with http.StatusNotFound.
+	}
+}
+
 // FetchHTTP is a wrapper function for making all Get API calls
 func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	var response ApiResponse
 	fullPath := fmt.Sprintf("%s/api/%s", c.URI, path)
-	level.Debug(c.logger).Log("msg", "Fetching http", "path", fullPath)
+	c.logger.Debug(
+		"Fetching http",
+		"path", fullPath,
+	)
 	resp, err := c.makeRequest("GET", fullPath, nil)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
+		c.logger.Error(
+			logMsgErrAPICall,
+			"endpoint", fullPath,
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.NodeId = resp.Header.Get("x-artifactory-node-id")
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == http.StatusNotFound {
 		var apiErrors APIErrors
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
-			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
+			c.logger.Error(
+				logMsgErrUnmarshall,
+				"err", err,
+			)
 			return nil, &UnmarshalError{
 				message:  err.Error(),
 				endpoint: fullPath,
 			}
 		}
-		level.Warn(c.logger).Log("msg", "The endpoint does not exist", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status", 404)
+		c.logger.Warn(
+			"The endpoint does not exist",
+			"endpoint", fullPath,
+			"err", fmt.Sprintf("%v", apiErrors.Errors),
+			"status", http.StatusNotFound,
+		)
 		return nil, &APIError{
 			message:  fmt.Sprintf("%v", apiErrors.Errors),
 			endpoint: fullPath,
-			status:   404,
+			status:   http.StatusNotFound,
 		}
 	}
 
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		var apiErrors APIErrors
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
-			level.Error(c.logger).Log("msg", "There was an error when trying to unmarshal the API Error", "err", err)
-			return nil, &UnmarshalError{
-				message:  err.Error(),
-				endpoint: fullPath,
-			}
-		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
-		return nil, &APIError{
-			message:  fmt.Sprintf("%v", apiErrors.Errors),
-			endpoint: fullPath,
-		}
+	if !slices.Contains(httpSuccCodes, resp.StatusCode) {
+		return c.procRespErr(resp, fullPath)
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
+		c.logger.Error(
+			"There was an error reading response body",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.Body = bodyBytes
@@ -99,33 +152,31 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 	var response ApiResponse
 	fullPath := fmt.Sprintf("%s/api/search/aql", c.URI)
-	level.Debug(c.logger).Log("msg", "Running AQL query", "path", fullPath)
+	c.logger.Debug(
+		"Running AQL query",
+		"path", fullPath,
+	)
 	resp, err := c.makeRequest("POST", fullPath, query)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", err.Error())
+		c.logger.Error(
+			logMsgErrAPICall,
+			"endpoint", fullPath,
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.NodeId = resp.Header.Get("x-artifactory-node-id")
 	defer resp.Body.Close()
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		var apiErrors APIErrors
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
-			return nil, &UnmarshalError{
-				message:  err.Error(),
-				endpoint: fullPath,
-			}
-		}
-		level.Error(c.logger).Log("msg", "There was an error making API call", "endpoint", fullPath, "err", fmt.Sprintf("%v", apiErrors.Errors), "status")
-		return nil, &APIError{
-			message:  fmt.Sprintf("%v", apiErrors.Errors),
-			endpoint: fullPath,
-		}
+	if !slices.Contains(httpSuccCodes, resp.StatusCode) {
+		return c.procRespErr(resp, fullPath)
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		level.Error(c.logger).Log("msg", "There was an error reading response body", "err", err.Error())
+		c.logger.Error(
+			"There was an error reading response body",
+			"err", err.Error(),
+		)
 		return nil, err
 	}
 	response.Body = bodyBytes
