@@ -15,7 +15,7 @@ import (
 
 var (
 	flagLogFormat   = kingpin.Flag(l.FormatFlagName, l.FormatFlagHelp).Default(l.FormatDefault).Enum(l.FormatsAvailable...)
-	flagLogLevel    = kingpin.Flag(l.LevelFlagName, l.LevelFlagHelp).Default(l.LevelFlagName).Enum(l.LevelsAvailable...)
+	flagLogLevel    = kingpin.Flag(l.LevelFlagName, l.LevelFlagHelp).Default(l.LevelDefault).Enum(l.LevelsAvailable...)
 	listenAddress   = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
 	metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
 	artiScrapeURI   = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape JFrog Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
