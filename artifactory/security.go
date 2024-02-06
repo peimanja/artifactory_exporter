@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	usersEndpoint  = "security/users"
-	groupsEndpoint = "security/groups"
+	usersEndpoint        = "security/users"
+	groupsEndpoint       = "security/groups"
+	certificatesEndpoint = "system/security/certificates"
 )
 
 // User represents single element of API respond from users endpoint
@@ -66,4 +67,39 @@ func (c *Client) FetchGroups() (Groups, error) {
 	}
 
 	return groups, nil
+}
+
+// Certificate represents a single element of an API response from the certificates endpoint
+type Certificate struct {
+	CertificateAlias string `json:"certificateAlias"`
+	IssuedTo         string `json:"issuedTo"`
+	IssuedBy         string `json:"issuedBy"`
+	IssuedOn         string `json:"issuedOn"`
+	ValidUntil       string `json:"validUntil"`
+	Fingerprint      string `json:"fingerprint"`
+}
+
+type Certificates struct {
+	Certificates []Certificate
+	NodeId       string
+}
+
+// FetchCertificates makes the API call to the certificates endpoint and returns []Certificates
+func (c *Client) FetchCertificates() (Certificates, error) {
+	var certs Certificates
+	c.logger.Debug("Fetching certificate stats")
+	resp, err := c.FetchHTTP(certificatesEndpoint)
+	if err != nil {
+		return certs, err
+	}
+	certs.NodeId = resp.NodeId
+	if err := json.Unmarshal(resp.Body, &certs.Certificates); err != nil {
+		c.logger.Error("There was an issue when try to unmarshal certificates response")
+		return certs, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: certificatesEndpoint,
+		}
+	}
+
+	return certs, nil
 }

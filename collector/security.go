@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -83,5 +84,50 @@ func (e *Exporter) exportGroups(metricName string, metric *prometheus.Desc, ch c
 		"value", float64(len(groups.Groups)), // What for log as float?Int is not precise enough?
 	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, float64(len(groups.Groups)), groups.NodeId)
+	return nil
+}
+
+func (e *Exporter) exportCertificates(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
+	// Fetch Artifactory certificates
+	certs, err := e.client.FetchCertificates()
+	if err != nil {
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching system/security/certificates",
+			"err", err.Error(),
+		)
+		e.totalAPIErrors.Inc()
+		return err
+	}
+	if len(certs.Certificates) == 0 {
+		e.logger.Debug("No certificates found")
+		return nil
+	}
+
+	for _, certificate := range certs.Certificates {
+		var validThrough float64
+		timeNow := float64(time.Now().Unix())
+		if validThroughTime, err := time.Parse(time.RFC3339, certificate.ValidUntil); err != nil {
+			e.logger.Warn(
+				"Couldn't parse certificate ValidThrough",
+				"err", err.Error(),
+			)
+			validThrough = timeNow
+		} else {
+			validThrough = float64(validThroughTime.Unix())
+		}
+
+		alias := certificate.CertificateAlias
+		issued_by := certificate.IssuedBy
+		valid_until := certificate.ValidUntil
+		e.logger.Debug(
+			"Registering metric",
+			"metric", metricName,
+			"alias", alias,
+			"issued_by", issued_by,
+			"valid_until", valid_until,
+		)
+		ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, alias, issued_by, valid_until, certs.NodeId)
+	}
+
 	return nil
 }

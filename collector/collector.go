@@ -17,6 +17,7 @@ var (
 	repoLabelNames        = append([]string{"name", "type", "package_type"}, defaultLabelNames...)
 	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp", "status"}, defaultLabelNames...)
 	federationLabelNames  = append([]string{"name", "remote_url", "remote_name"}, defaultLabelNames...)
+	certificateLabelNames = append([]string{"alias", "issued_by", "expires"}, defaultLabelNames...)
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
@@ -31,8 +32,9 @@ var (
 	}
 
 	securityMetrics = metrics{
-		"users":  newMetric("users", "security", "Number of Artifactory users for each realm.", append([]string{"realm"}, defaultLabelNames...)),
-		"groups": newMetric("groups", "security", "Number of Artifactory groups", defaultLabelNames),
+		"users":        newMetric("users", "security", "Number of Artifactory users for each realm.", append([]string{"realm"}, defaultLabelNames...)),
+		"groups":       newMetric("groups", "security", "Number of Artifactory groups", defaultLabelNames),
+		"certificates": newMetric("certificates", "security", "Internal SSL certificate information, seconds to expiration as value", certificateLabelNames),
 	}
 
 	storageMetrics = metrics{
@@ -151,6 +153,11 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 				}
 			case "groups":
 				err := e.exportGroups(metricName, metric, ch)
+				if err != nil {
+					return 0
+				}
+			case "certificates":
+				err := e.exportCertificates(metricName, metric, ch)
 				if err != nil {
 					return 0
 				}
