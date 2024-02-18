@@ -21,7 +21,7 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
 
@@ -29,7 +29,7 @@ jobs:
       id: date
       run: echo "value=$(date +%FT%TZ)" >> "${GITHUB_OUTPUT}"
 
-    - uses: wangyoucao577/go-release-action@master
+    - uses: wangyoucao577/go-release-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goversion: 1.21
