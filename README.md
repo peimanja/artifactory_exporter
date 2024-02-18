@@ -164,6 +164,7 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_exporter_total_api_errors | Current total Artifactory API errors when scraping for stats. |  | &#9989; |
 | artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  | &#9989; |
 | artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp`, `status` | |
+| artifactory_security_certificates | SSL certificate name and expiry as labels, seconds to expiration as value | `alias`, `expires`, `issued_by` | |
 | artifactory_security_groups | Number of Artifactory groups. | | |
 | artifactory_security_users | Number of Artifactory users for each realm. | `realm` | |
 | artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  | &#9989; |
