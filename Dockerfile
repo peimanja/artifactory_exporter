@@ -1,5 +1,4 @@
-ARG BUILDPLATFORM
-FROM --platform=${BUILDPLATFORM} golang:1.21 AS build
+FROM golang:1.21 AS build
 
 WORKDIR /go/artifactory_exporter
 ADD . /go/artifactory_exporter
