@@ -1,4 +1,6 @@
-FROM golang:1.21 as build
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+FROM --platform=${BUILDPLATFORM} golang:1.21 as build
 
 WORKDIR /go/artifactory_exporter
 ADD . /go/artifactory_exporter
@@ -13,7 +15,8 @@ ARG SOURCE_BRANCH
 ARG BUILD_DATE
 ARG BUILD_USER
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -o /go/bin/artifactory_exporter -ldflags " \
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$(echo $TARGETPLATFORM | cut -d / -f2) go build -a -o /go/bin/artifactory_exporter -ldflags " \
     -X github.com/prometheus/common/version.Version=${VERSION} \
     -X github.com/prometheus/common/version.Revision=${SOURCE_COMMIT} \
     -X github.com/prometheus/common/version.Branch=${SOURCE_BRANCH} \
