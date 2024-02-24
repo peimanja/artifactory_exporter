@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+const (
+	logDbgKeyArtNum = `artifactory.number`
+)
+
 // convArtiBoolToProm is a very interesting appendix.
 // Something needs it, but what and why?
 // It would be quite nice if it was written here why such a thing is needed.
@@ -27,13 +31,13 @@ var (
 func (e *Exporter) convNumArtiToProm(artiNum string) (float64, error) {
 	e.logger.Debug(
 		"Attempting to convert a string from artifactory representing a number.",
-		"artifactory.number", artiNum,
+		logDbgKeyArtNum, artiNum,
 	)
 
 	if !reOneNumber.MatchString(artiNum) {
 		e.logger.Debug(
 			"The arti number did not match known templates.",
-			"artifactory.number", artiNum,
+			logDbgKeyArtNum, artiNum,
 		)
 		err := fmt.Errorf(
 			`The string '%s' does not match pattern '%s'.`,
@@ -78,13 +82,13 @@ var (
 func (e *Exporter) convTwoNumsArtiToProm(artiSize string) (float64, float64, error) {
 	e.logger.Debug(
 		"Attempting to convert a string from artifactory representing a number.",
-		"artifactory.number", artiSize,
+		logDbgKeyArtNum, artiSize,
 	)
 
 	if !reTBytesPercent.MatchString(artiSize) {
 		e.logger.Debug(
 			"The arti number did not match known templates.",
-			"artifactory.number", artiSize,
+			logDbgKeyArtNum, artiSize,
 		)
 		err := fmt.Errorf(
 			`The string '%s' does not match '%s' pattern.`,
@@ -93,16 +97,22 @@ func (e *Exporter) convTwoNumsArtiToProm(artiSize string) (float64, float64, err
 		)
 		return 0, 0, err
 	}
+
 	groups := extractNamedGroups(artiSize, reTBytesPercent)
+
 	b, err := e.convNumber(groups["tbytes"])
 	if err != nil {
 		return 0, 0, err
 	}
 	mulTB, _ := e.convMultiplier(`TB`)
+	size := b * mulTB
+
 	p, err := e.convNumber(groups["percent"])
 	if err != nil {
 		return 0, 0, err
 	}
 	mulPercent, _ := e.convMultiplier(`%`)
-	return b * mulTB, p * mulPercent, nil
+	percent := p * mulPercent
+
+	return size, percent, nil
 }
