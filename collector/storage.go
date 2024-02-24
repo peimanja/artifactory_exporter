@@ -15,7 +15,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, err := e.removeCommas(count)
+	value, err := e.convNumArtiToProm(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
 		e.logger.Error(
@@ -38,7 +38,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, err := e.bytesConverter(size)
+	value, err := e.convNumArtiToProm(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
 		e.logger.Error(
@@ -61,7 +61,11 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, err := e.bytesConverter(size)
+	value, percent, err := e.convTwoNumsArtiToProm(size)
+	/*
+	 * What should you use the percentage for?
+	 * Maybe Issue #126?
+	 */
 	if err != nil {
 		e.jsonParseFailures.Inc()
 		e.logger.Warn(
@@ -75,6 +79,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		logDbgMsgRegMetric,
 		"metric", metricName,
 		"value", value,
+		"percent", percent,
 	)
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir, nodeId)
 }
@@ -112,7 +117,7 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		rs.FilesCount = float64(repo.FilesCount)
 		rs.ItemsCount = float64(repo.ItemsCount)
 		rs.PackageType = strings.ToLower(repo.PackageType)
-		rs.UsedSpace, err = e.bytesConverter(repo.UsedSpace)
+		rs.UsedSpace, err = e.convNumArtiToProm(repo.UsedSpace)
 		if err != nil {
 			e.logger.Warn(
 				"There was an issue parsing repo UsedSpace",
@@ -125,7 +130,13 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		if repo.Percentage == "N/A" {
 			rs.Percentage = 0
 		} else {
-			rs.Percentage, err = e.removeCommas(repo.Percentage)
+			/* WARNING!
+			 * Previous e.removeCommas have been returning float from range [0.0, 100.0]
+			 * Actual convNumArtiToProm returns float from range [0.0, 1.0]
+			 * The application's behavior in this matter requires
+			 * close observation in the near future.
+			 */
+			rs.Percentage, err = e.convNumArtiToProm(repo.Percentage)
 			if err != nil {
 				e.logger.Warn(
 					"There was an issue parsing repo Percentage",
