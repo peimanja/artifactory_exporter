@@ -10,10 +10,10 @@ const (
 	logDbgKeyArtNum = `artifactory.number`
 )
 
-// convArtiBoolToProm is a very interesting appendix.
+// convArtiToPromBool is a very interesting appendix.
 // Something needs it, but what and why?
 // It would be quite nice if it was written here why such a thing is needed.
-func convArtiBoolToProm(b bool) float64 {
+func convArtiToPromBool(b bool) float64 {
 	if b {
 		return 1
 	}
@@ -28,7 +28,7 @@ var (
 	reOneNumber = regexp.MustCompile(pattOneNumber)
 )
 
-func (e *Exporter) convNumArtiToProm(artiNum string) (float64, error) {
+func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 	e.logger.Debug(
 		"Attempting to convert a string from artifactory representing a number.",
 		logDbgKeyArtNum, artiNum,
@@ -79,7 +79,7 @@ var (
 	reTBytesPercent = regexp.MustCompile(pattTBytesPercent)
 )
 
-func (e *Exporter) convTwoNumsArtiToProm(artiSize string) (float64, float64, error) {
+func (e *Exporter) convArtiToPromSizeAndUsage(artiSize string) (float64, float64, error) {
 	e.logger.Debug(
 		"Attempting to convert a string from artifactory representing a number.",
 		logDbgKeyArtNum, artiSize,

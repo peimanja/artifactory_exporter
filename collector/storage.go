@@ -15,7 +15,7 @@ func (e *Exporter) exportCount(metricName string, metric *prometheus.Desc, count
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, err := e.convNumArtiToProm(count)
+	value, err := e.convArtiToPromNumber(count)
 	if err != nil {
 		e.jsonParseFailures.Inc()
 		e.logger.Error(
@@ -38,7 +38,7 @@ func (e *Exporter) exportSize(metricName string, metric *prometheus.Desc, size s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, err := e.convNumArtiToProm(size)
+	value, err := e.convArtiToPromNumber(size)
 	if err != nil {
 		e.jsonParseFailures.Inc()
 		e.logger.Error(
@@ -61,7 +61,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, percent, err := e.convTwoNumsArtiToProm(size)
+	value, percent, err := e.convArtiToPromSizeAndUsage(size)
 	/*
 	 * What should you use the percentage for?
 	 * Maybe Issue #126?
@@ -117,7 +117,7 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 		rs.FilesCount = float64(repo.FilesCount)
 		rs.ItemsCount = float64(repo.ItemsCount)
 		rs.PackageType = strings.ToLower(repo.PackageType)
-		rs.UsedSpace, err = e.convNumArtiToProm(repo.UsedSpace)
+		rs.UsedSpace, err = e.convArtiToPromNumber(repo.UsedSpace)
 		if err != nil {
 			e.logger.Warn(
 				"There was an issue parsing repo UsedSpace",
@@ -136,7 +136,7 @@ func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSumma
 			 * The application's behavior in this matter requires
 			 * close observation in the near future.
 			 */
-			rs.Percentage, err = e.convNumArtiToProm(repo.Percentage)
+			rs.Percentage, err = e.convArtiToPromNumber(repo.Percentage)
 			if err != nil {
 				e.logger.Warn(
 					"There was an issue parsing repo Percentage",

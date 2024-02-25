@@ -44,7 +44,7 @@ func TestConvNum(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := fakeExporter.convNumArtiToProm(tc.input)
+		got, err := fakeExporter.convArtiToPromNumber(tc.input)
 		if err != nil {
 			t.Fatalf(`An error '%v' occurred during conversion.`, err)
 		}
@@ -80,7 +80,7 @@ func TestConvTwoNum(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		gotSize, gotPercent, err := fakeExporter.convTwoNumsArtiToProm(tc.input)
+		gotSize, gotPercent, err := fakeExporter.convArtiToPromSizeAndUsage(tc.input)
 		if err != nil {
 			t.Fatalf(`An error '%v' occurred during conversion.`, err)
 		}

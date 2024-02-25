@@ -25,7 +25,7 @@ func (e *Exporter) exportReplications(ch chan<- prometheus.Metric) error {
 		for metricName, metric := range replicationMetrics {
 			switch metricName {
 			case "enabled":
-				enabled := convArtiBoolToProm(replication.Enabled)
+				enabled := convArtiToPromBool(replication.Enabled)
 				repo := replication.RepoKey
 				rType := strings.ToLower(replication.ReplicationType)
 				rURL := strings.ToLower(replication.URL)
