@@ -33,7 +33,7 @@ func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prome
 	for metricName, metric := range systemMetrics {
 		switch metricName {
 		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, b2f(health.Healthy), health.NodeId)
+			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, convArtiToPromBool(health.Healthy), health.NodeId)
 		case "version":
 			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision, buildInfo.NodeId)
 		case "license":
