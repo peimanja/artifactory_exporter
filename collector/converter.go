@@ -21,7 +21,7 @@ func convArtiToPromBool(b bool) float64 {
 }
 
 const (
-	pattNumber = `^(?P<number>[[:digit:]]{1,3}(?:,[[:digit:]]{3})*)(?:\.[[:digit:]]{1,2})? ?(?P<multiplier>%|bytes|[KMGT]B)?$`
+	pattNumber = `^(?P<number>[[:digit:]]{1,3}(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?) ?(?P<multiplier>%|bytes|[KMGT]B)?$`
 )
 
 var (
