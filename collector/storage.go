@@ -61,7 +61,7 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 		e.jsonParseFailures.Inc()
 		return
 	}
-	value, percent, err := e.convArtiToPromSizeAndUsage(size)
+	value, percent, err := e.convArtiToPromFileStoreData(size)
 	/*
 	 * What should you use the percentage for?
 	 * Maybe Issue #126?
