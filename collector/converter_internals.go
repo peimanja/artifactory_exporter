@@ -25,7 +25,7 @@ func (e *Exporter) convMultiplier(m string) (float64, error) {
 		"The string was not recognized as a known multiplier.",
 		"artifactory.number.multiplier", m,
 	)
-	return 0, fmt.Errorf(`Could not recognise '%s; as multiplier`, m)
+	return 0, fmt.Errorf(`Could not recognise '%s' as multiplier`, m)
 }
 
 func (e *Exporter) convNumber(n string) (float64, error) {

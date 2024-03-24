@@ -21,11 +21,11 @@ func convArtiToPromBool(b bool) float64 {
 }
 
 const (
-	pattOneNumber = `^(?P<number>[[:digit:]]{1,3}(?:,[[:digit:]]{3})*)(?:\.[[:digit:]]{1,2})? ?(?P<multiplier>%|bytes|[KMGT]B)?$`
+	pattNumber = `^(?P<number>[[:digit:]]{1,3}(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?) ?(?P<multiplier>%|bytes|[KMGT]B)?$`
 )
 
 var (
-	reOneNumber = regexp.MustCompile(pattOneNumber)
+	reNumber = regexp.MustCompile(pattNumber)
 )
 
 func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
@@ -34,7 +34,7 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 		logDbgKeyArtNum, artiNum,
 	)
 
-	if !reOneNumber.MatchString(artiNum) {
+	if !reNumber.MatchString(artiNum) {
 		e.logger.Debug(
 			"The arti number did not match known templates.",
 			logDbgKeyArtNum, artiNum,
@@ -42,12 +42,12 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 		err := fmt.Errorf(
 			`The string '%s' does not match pattern '%s'.`,
 			artiNum,
-			pattOneNumber,
+			pattNumber,
 		)
 		return 0, err
 	}
 
-	groups := extractNamedGroups(artiNum, reOneNumber)
+	groups := extractNamedGroups(artiNum, reNumber)
 
 	// The following `strings.replace` is for those cases that contain a comma
 	// thousands separator.  In other cases, unnecessary, but cheaper than if.
@@ -72,47 +72,59 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 }
 
 const (
-	pattTBytesPercent = `^(?P<tbytes>[[:digit:]]+(?:\.[[:digit:]]{1,2})?) TB \((?P<percent>[[:digit:]]{1,2}(?:\.[[:digit:]]{1,2})?)%\)$`
+	pattFileStoreData = `^(?P<size>[[:digit:]]+(?:\.[[:digit:]]{1,2})? [KMGT]B) \((?P<usage>[[:digit:]]{1,2}(?:\.[[:digit:]]{1,2})?%)\)$`
 )
 
 var (
-	reTBytesPercent = regexp.MustCompile(pattTBytesPercent)
+	reFileStoreData = regexp.MustCompile(pattFileStoreData)
 )
 
-func (e *Exporter) convArtiToPromSizeAndUsage(artiSize string) (float64, float64, error) {
+// convArtiToPromFileStoreData tries to interpret the string from artifactory
+// as filestore data.
+// Usually the inscription has two parts. Size and percentage of use. However,
+// it happens that artifactory only gives the size.
+// Please look at the cases in the unit test `TestConvFileStoreData`.
+func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float64, error) {
 	e.logger.Debug(
-		"Attempting to convert a string from artifactory representing a number.",
+		"Attempting to convert a string from artifactory representing a file store data.",
 		logDbgKeyArtNum, artiSize,
 	)
 
-	if !reTBytesPercent.MatchString(artiSize) {
+	if !strings.Contains(artiSize, `%`) {
+		b, err := e.convArtiToPromNumber(artiSize)
+		if err != nil {
+			return 0, 0, fmt.Errorf(
+				"The string '%s' not recognisable as known artifactory filestore size: %w",
+				artiSize,
+				err,
+			)
+		}
+		return b, 0, nil
+	}
+
+	if !reFileStoreData.MatchString(artiSize) {
 		e.logger.Debug(
-			"The arti number did not match known templates.",
+			fmt.Sprintf(
+				"The arti number did not match template '%s'.",
+				pattFileStoreData,
+			),
 			logDbgKeyArtNum, artiSize,
 		)
 		err := fmt.Errorf(
 			`The string '%s' does not match '%s' pattern.`,
 			artiSize,
-			pattTBytesPercent,
+			pattFileStoreData,
 		)
 		return 0, 0, err
 	}
-
-	groups := extractNamedGroups(artiSize, reTBytesPercent)
-
-	b, err := e.convNumber(groups["tbytes"])
+	groups := extractNamedGroups(artiSize, reFileStoreData)
+	size, err := e.convArtiToPromNumber(groups["size"])
 	if err != nil {
 		return 0, 0, err
 	}
-	mulTB, _ := e.convMultiplier(`TB`)
-	size := b * mulTB
-
-	p, err := e.convNumber(groups["percent"])
+	usage, err := e.convArtiToPromNumber(groups["usage"])
 	if err != nil {
 		return 0, 0, err
 	}
-	mulPercent, _ := e.convMultiplier(`%`)
-	percent := p * mulPercent
-
-	return size, percent, nil
+	return size, usage, nil
 }
