@@ -60,7 +60,7 @@ func TestConvNum(t *testing.T) {
 			want:  44.0,
 		},
 		{
-			// Covers https://github.com/peimanja/artifactory_exporter/issues/139
+			// Just to check https://github.com/peimanja/artifactory_exporter/issues/139
 			input: `100 %`,
 			want:  1.0,
 		},

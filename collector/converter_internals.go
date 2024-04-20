@@ -8,7 +8,6 @@ import (
 )
 
 var mulConvDriver = map[string]float64{
-	``:      1,
 	`%`:     0.01,
 	`bytes`: 1,
 	`KB`:    math.Exp2(10),
@@ -47,8 +46,9 @@ func extractNamedGroups(artiNum string, re *regexp.Regexp) reCaptureGroups {
 	match := re.FindStringSubmatch(artiNum)
 	groupsFound := make(reCaptureGroups)
 	for i, name := range re.SubexpNames() {
-		if i != 0 && name != "" {
-			groupsFound[name] = match[i]
+		groupCaptured := match[i]
+		if i != 0 && name != `` && groupCaptured != `` {
+			groupsFound[name] = groupCaptured
 		}
 	}
 	return groupsFound
