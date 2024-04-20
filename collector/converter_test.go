@@ -49,6 +49,21 @@ func TestConvNum(t *testing.T) {
 			input: `888.88 GB`,
 			want:  954427632517.119995,
 		},
+		{
+			// Covers https://github.com/peimanja/artifactory_exporter/issues/139
+			input: `1`,
+			want:  1.0,
+		},
+		{
+			// Covers https://github.com/peimanja/artifactory_exporter/issues/139
+			input: `44`,
+			want:  44.0,
+		},
+		{
+			// Covers https://github.com/peimanja/artifactory_exporter/issues/139
+			input: `100 %`,
+			want:  1.0,
+		},
 	}
 	for _, tc := range tests {
 		got, err := fakeExporter.convArtiToPromNumber(tc.input)
@@ -93,6 +108,11 @@ func TestConvFileStoreData(t *testing.T) {
 		{
 			input: `494.94 GB (99.04%)`,
 			want:  []float64{531437778370.559998, 0.9904},
+		},
+		{
+			// Just to check https://github.com/peimanja/artifactory_exporter/issues/139
+			input: `1.0 GB (1.0%)`,
+			want:  []float64{1073741824.000000, 0.0100},
 		},
 	}
 	for _, tc := range tests {

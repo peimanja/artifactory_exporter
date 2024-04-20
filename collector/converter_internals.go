@@ -8,6 +8,7 @@ import (
 )
 
 var mulConvDriver = map[string]float64{
+	``:      1,
 	`%`:     0.01,
 	`bytes`: 1,
 	`KB`:    math.Exp2(10),
