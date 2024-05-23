@@ -2,6 +2,7 @@ package artifactory
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -39,7 +40,8 @@ func (c *Client) FetchReplications() (Replications, error) {
 	c.logger.Debug("Fetching replications stats")
 	resp, err := c.FetchHTTP(replicationEndpoint)
 	if err != nil {
-		if err.(*APIError).status == 404 {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.status == 404 {
 			return replications, nil
 		}
 		return replications, err
