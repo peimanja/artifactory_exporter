@@ -2,8 +2,10 @@ package artifactory
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -69,11 +71,6 @@ type LicenseInfo struct {
 	ValidThrough string `json:"validThrough"`
 	LicensedTo   string `json:"licensedTo"`
 	NodeId       string
-	ValidSeconds int64 // It will be calculated in the ‘collector’ package.
-}
-
-func (l LicenseInfo) TypeNormalized() string {
-	return strings.ToLower(l.Type)
 }
 
 func (l LicenseInfo) IsOSS() bool {
@@ -86,6 +83,26 @@ func (l LicenseInfo) IsOSS() bool {
 		afOSSLicenseTypes,
 		l.TypeNormalized(),
 	)
+}
+
+func (l LicenseInfo) TypeNormalized() string {
+	return strings.ToLower(l.Type)
+}
+
+func (l LicenseInfo) ValidSeconds() (int64, error) {
+	if l.IsOSS() {
+		return 0, nil
+	}
+	validThroughTime, err := time.Parse("Jan 2, 2006", l.ValidThrough)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"unparsable ‘validThrough’ license field: %w",
+			err,
+		)
+	}
+	validThroughEpoch := validThroughTime.Unix()
+	timeNowEpoch := time.Now().Unix()
+	return validThroughEpoch - timeNowEpoch, nil
 }
 
 // FetchLicense makes the API call to license endpoint and returns LicenseInfo

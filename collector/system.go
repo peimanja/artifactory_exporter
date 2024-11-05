@@ -1,67 +1,8 @@
 package collector
 
 import (
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/peimanja/artifactory_exporter/artifactory"
 )
-
-func collectLicense(e *Exporter, ch chan<- prometheus.Metric) (artifactory.LicenseInfo, error) {
-	retErr := func(err error) (artifactory.LicenseInfo, error) {
-		return artifactory.LicenseInfo{}, err
-	}
-
-	license, err := e.client.FetchLicense()
-	if err != nil {
-		return retErr(err)
-	}
-
-	if !license.IsOSS() { // Some endpoints are only available commercially.
-		for metricName, metric := range securityMetrics {
-			switch metricName {
-			case "users":
-				err := e.exportUsersCount(metricName, metric, ch)
-				if err != nil {
-					return retErr(err)
-				}
-			case "groups":
-				err := e.exportGroups(metricName, metric, ch)
-				if err != nil {
-					return retErr(err)
-				}
-			case "certificates":
-				err := e.exportCertificates(metricName, metric, ch)
-				if err != nil {
-					return retErr(err)
-				}
-			}
-		}
-		if err := e.exportReplications(ch); err != nil {
-			return retErr(err)
-		}
-	}
-
-	licenseValidSeconds := func() int64 {
-		if license.IsOSS() {
-			return 0
-		}
-		validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough)
-		if err != nil {
-			e.logger.Warn(
-				"Couldn't parse Artifactory license ValidThrough",
-				"err", err.Error(),
-			)
-			return 0 // We deliberately ignore the error in order to maintain continuity.
-		}
-		validThroughEpoch := validThroughTime.Unix()
-		timeNowEpoch := time.Now().Unix()
-		return validThroughEpoch - timeNowEpoch
-	}
-	license.ValidSeconds = licenseValidSeconds()
-	return license, nil
-}
 
 func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 	healthInfo, err := e.client.FetchHealth()
@@ -82,7 +23,7 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 		e.totalAPIErrors.Inc()
 		return err
 	}
-	licenseInfo, err := collectLicense(e, ch)
+	licenseInfo, err := e.client.FetchLicense()
 	if err != nil {
 		e.logger.Error(
 			"Couldn't scrape Artifactory when fetching system/license",
@@ -91,18 +32,37 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 		e.totalAPIErrors.Inc()
 		return err
 	}
+	licenseValSec, err := licenseInfo.ValidSeconds()
+	if err != nil {
+		e.logger.Warn(
+			"Couldn't get Artifactory license validity",
+			"err", err.Error(),
+		) // To preserve the operation, we do nothing but log the event,
+	}
 
 	for metricName, metric := range systemMetrics {
 		switch metricName {
 		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, convArtiToPromBool(healthInfo.Healthy), healthInfo.NodeId)
+			ch <- prometheus.MustNewConstMetric(
+				metric,
+				prometheus.GaugeValue,
+				convArtiToPromBool(healthInfo.Healthy),
+				healthInfo.NodeId,
+			)
 		case "version":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision, buildInfo.NodeId)
+			ch <- prometheus.MustNewConstMetric(
+				metric,
+				prometheus.GaugeValue,
+				1,
+				buildInfo.Version,
+				buildInfo.Revision,
+				buildInfo.NodeId,
+			)
 		case "license":
 			ch <- prometheus.MustNewConstMetric(
 				metric,
 				prometheus.GaugeValue,
-				float64(licenseInfo.ValidSeconds), // Prometheus expects a float type.
+				float64(licenseValSec), // Prometheus expects a float type.
 				licenseInfo.TypeNormalized(),
 				licenseInfo.LicensedTo,
 				licenseInfo.ValidThrough,
@@ -110,5 +70,12 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 			)
 		}
 	}
+	if !licenseInfo.IsOSS() { // Some endpoints are only available commercially.
+		err := e.exportAllSecurityMetrics(ch)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
