@@ -8,12 +8,6 @@ import (
 	"github.com/peimanja/artifactory_exporter/artifactory"
 )
 
-var afOSSLicenseTypes = []string{
-	`oss`,
-	`jcr edition`,
-	`community edition for c/c++`,
-}
-
 func collectLicense(e *Exporter, ch chan<- prometheus.Metric) (artifactory.LicenseInfo, error) {
 	retErr := func(err error) (artifactory.LicenseInfo, error) {
 		return artifactory.LicenseInfo{}, err
@@ -108,8 +102,8 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 			ch <- prometheus.MustNewConstMetric(
 				metric,
 				prometheus.GaugeValue,
-				float64(licenseInfo.ValidSeconds), //float
-				licenseInfo.NormalizedLicenseType(),
+				float64(licenseInfo.ValidSeconds), // Prometheus expects a float type.
+				licenseInfo.TypeNormalized(),
 				licenseInfo.LicensedTo,
 				licenseInfo.ValidThrough,
 				licenseInfo.NodeId,

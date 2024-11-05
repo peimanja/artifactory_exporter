@@ -72,7 +72,7 @@ type LicenseInfo struct {
 	ValidSeconds int64 // It will be calculated in the ‘collector’ package.
 }
 
-func (l LicenseInfo) NormalizedLicenseType() string {
+func (l LicenseInfo) TypeNormalized() string {
 	return strings.ToLower(l.Type)
 }
 
@@ -84,7 +84,7 @@ func (l LicenseInfo) IsOSS() bool {
 	}
 	return slices.Contains(
 		afOSSLicenseTypes,
-		l.NormalizedLicenseType(),
+		l.TypeNormalized(),
 	)
 }
 
