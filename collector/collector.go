@@ -1,8 +1,6 @@
 package collector
 
 import (
-	"strings"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
 )
@@ -134,52 +132,16 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
-	// Collect License info
-	var licenseType string
-	license, err := e.client.FetchLicense()
-	if err != nil {
-		e.totalAPIErrors.Inc()
-		return 0
-	}
-	licenseType = strings.ToLower(license.Type)
-	// Some API endpoints are not available in OSS
-	if licenseType != "oss" && licenseType != "jcr edition" && licenseType != "community edition for c/c++" {
-		for metricName, metric := range securityMetrics {
-			switch metricName {
-			case "users":
-				err := e.exportUsersCount(metricName, metric, ch)
-				if err != nil {
-					return 0
-				}
-			case "groups":
-				err := e.exportGroups(metricName, metric, ch)
-				if err != nil {
-					return 0
-				}
-			case "certificates":
-				err := e.exportCertificates(metricName, metric, ch)
-				if err != nil {
-					return 0
-				}
-			}
-		}
-		err = e.exportReplications(ch)
-		if err != nil {
-			return 0
-		}
-	}
-
 	// Collect and export open metrics
 	if e.optionalMetrics.OpenMetrics {
-		err = e.exportOpenMetrics(ch)
+		err := e.exportOpenMetrics(ch)
 		if err != nil {
 			return 0
 		}
 	}
 
 	// Collect and export system metrics
-	err = e.exportSystem(license, ch)
-	if err != nil {
+	if err := e.exportSystem(ch); err != nil {
 		return 0
 	}
 
@@ -200,7 +162,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	// Get Downloaded and Created items for all repo in the last 1 and 5 minutes and add it to repoSummaryList
 	if e.optionalMetrics.Artifacts {
-		repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
+		repoSummaryList, err := e.getTotalArtifacts(repoSummaryList)
 		if err != nil {
 			return 0
 		}

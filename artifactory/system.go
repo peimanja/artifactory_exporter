@@ -2,6 +2,8 @@ package artifactory
 
 import (
 	"encoding/json"
+	"slices"
+	"strings"
 )
 
 const (
@@ -67,6 +69,23 @@ type LicenseInfo struct {
 	ValidThrough string `json:"validThrough"`
 	LicensedTo   string `json:"licensedTo"`
 	NodeId       string
+	ValidSeconds int64 // It will be calculated in the ‘collector’ package.
+}
+
+func (l LicenseInfo) NormalizedLicenseType() string {
+	return strings.ToLower(l.Type)
+}
+
+func (l LicenseInfo) IsOSS() bool {
+	var afOSSLicenseTypes = []string{
+		`community edition for c/c++`,
+		`jcr edition`,
+		`oss`,
+	}
+	return slices.Contains(
+		afOSSLicenseTypes,
+		l.NormalizedLicenseType(),
+	)
 }
 
 // FetchLicense makes the API call to license endpoint and returns LicenseInfo
