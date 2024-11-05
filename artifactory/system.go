@@ -89,11 +89,13 @@ func (l LicenseInfo) TypeNormalized() string {
 	return strings.ToLower(l.Type)
 }
 
+const USAFullDate = "Jan 2, 2006"
+
 func (l LicenseInfo) ValidSeconds() (int64, error) {
 	if l.IsOSS() {
 		return 0, nil
 	}
-	validThroughTime, err := time.Parse("Jan 2, 2006", l.ValidThrough)
+	validThroughTime, err := time.Parse(USAFullDate, l.ValidThrough)
 	if err != nil {
 		return 0, fmt.Errorf(
 			"unparsable ‘validThrough’ license field: %w",
