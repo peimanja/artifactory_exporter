@@ -1,16 +1,11 @@
 package collector
 
 import (
-	"strings"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/peimanja/artifactory_exporter/artifactory"
 )
 
-func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prometheus.Metric) error {
-	health, err := e.client.FetchHealth()
+func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
+	healthInfo, err := e.client.FetchHealth()
 	if err != nil {
 		e.logger.Error(
 			"Couldn't scrape Artifactory when fetching system/ping",
@@ -28,33 +23,59 @@ func (e *Exporter) exportSystem(license artifactory.LicenseInfo, ch chan<- prome
 		e.totalAPIErrors.Inc()
 		return err
 	}
+	licenseInfo, err := e.client.FetchLicense()
+	if err != nil {
+		e.logger.Error(
+			"Couldn't scrape Artifactory when fetching system/license",
+			"err", err.Error(),
+		)
+		e.totalAPIErrors.Inc()
+		return err
+	}
+	licenseValSec, err := licenseInfo.ValidSeconds()
+	if err != nil {
+		e.logger.Warn(
+			"Couldn't get Artifactory license validity",
+			"err", err.Error(),
+		) // To preserve the operation, we do nothing but log the event,
+	}
 
-	licenseType := strings.ToLower(license.Type)
 	for metricName, metric := range systemMetrics {
 		switch metricName {
 		case "healthy":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, convArtiToPromBool(health.Healthy), health.NodeId)
+			ch <- prometheus.MustNewConstMetric(
+				metric,
+				prometheus.GaugeValue,
+				convArtiToPromBool(healthInfo.Healthy),
+				healthInfo.NodeId,
+			)
 		case "version":
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, 1, buildInfo.Version, buildInfo.Revision, buildInfo.NodeId)
+			ch <- prometheus.MustNewConstMetric(
+				metric,
+				prometheus.GaugeValue,
+				1,
+				buildInfo.Version,
+				buildInfo.Revision,
+				buildInfo.NodeId,
+			)
 		case "license":
-			var validThrough float64
-			timeNow := float64(time.Now().Unix())
-			switch licenseType {
-			case "oss", "jcr edition", "community edition for c/c++":
-				validThrough = timeNow
-			default:
-				if validThroughTime, err := time.Parse("Jan 2, 2006", license.ValidThrough); err != nil {
-					e.logger.Warn(
-						"Couldn't parse Artifactory license ValidThrough",
-						"err", err.Error(),
-					)
-					validThrough = timeNow
-				} else {
-					validThrough = float64(validThroughTime.Unix())
-				}
-			}
-			ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, validThrough-timeNow, licenseType, license.LicensedTo, license.ValidThrough, license.NodeId)
+			ch <- prometheus.MustNewConstMetric(
+				metric,
+				prometheus.GaugeValue,
+				float64(licenseValSec), // Prometheus expects a float type.
+				licenseInfo.TypeNormalized(),
+				licenseInfo.LicensedTo,
+				licenseInfo.ValidThrough,
+				licenseInfo.NodeId,
+			)
 		}
 	}
+	if !licenseInfo.IsOSS() { // Some endpoints are only available commercially.
+		err := e.exportAllSecurityMetrics(ch)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
