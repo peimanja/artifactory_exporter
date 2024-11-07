@@ -64,6 +64,11 @@ func TestConvNum(t *testing.T) {
 			input: `100 %`,
 			want:  1.0,
 		},
+		{
+			// Detected during testing of https://github.com/peimanja/artifactory_exporter/pull/149
+			input: `1000GB`,
+			want:  1073741824000.0,
+		},
 	}
 	for _, tc := range tests {
 		got, err := fakeExporter.convArtiToPromNumber(tc.input)
