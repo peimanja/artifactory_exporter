@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,7 +27,15 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 	parser := expfmt.TextParser{}
 	metrics, err := parser.TextToMetricFamilies(strings.NewReader(openMetricsString))
 	if err != nil {
-		return err
+		e.logger.Error(
+			"Openmetrics downloaded from artifactory cannot be parsed using the “github.com/prometheus/common/expfmt”.",
+			"err", err.Error(),
+			"response.body", openMetricsString,
+		)
+		return fmt.Errorf(
+			"problem when parsing openmetrics downloaded from artifactory: %w",
+			err,
+		)
 	}
 
 	for _, family := range metrics {
