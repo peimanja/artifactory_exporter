@@ -17,13 +17,11 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
+	openMetricsString := openMetrics.PromMetrics
 	e.logger.Debug(
 		"OpenMetrics from Artifactory util",
-		"body", openMetrics.PromMetrics,
+		"body", openMetricsString,
 	)
-
-	openMetricsString := openMetrics.PromMetrics
-
 	parser := expfmt.TextParser{}
 	metrics, err := parser.TextToMetricFamilies(strings.NewReader(openMetricsString))
 	if err != nil {
