@@ -36,28 +36,31 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 		)
 	}
 
+	createDesc := func(fn, fh string, m *ioPrometheusClient.Metric) *prometheus.Desc {
+		labels := make(map[string]string)
+		for _, label := range m.Label {
+			labels[*label.Name] = *label.Value
+		}
+		return prometheus.NewDesc(fn, fh, nil, labels)
+	}
 	for _, family := range metrics {
+		fName := family.GetName()
+		fHelp := family.GetHelp()
 		for _, metric := range family.Metric {
-			// create labels map
-			labels := make(map[string]string)
-			for _, label := range metric.Label {
-				labels[*label.Name] = *label.Value
-			}
-
-			// create a new descriptor
-			desc := prometheus.NewDesc(
-				family.GetName(),
-				family.GetHelp(),
-				nil,
-				labels,
-			)
-
-			// create a new metric and collect it
+			desc := createDesc(fName, fHelp, metric)
 			switch family.GetType() {
 			case ioPrometheusClient.MetricType_COUNTER:
-				ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, metric.GetCounter().GetValue())
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.CounterValue,
+					metric.GetCounter().GetValue(),
+				)
 			case ioPrometheusClient.MetricType_GAUGE:
-				ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, metric.GetGauge().GetValue())
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					metric.GetGauge().GetValue(),
+				)
 			}
 		}
 	}
