@@ -26,6 +26,32 @@ func (e *Exporter) countUsersPerRealm(users []artifactory.User) realmUserCounts 
 	return usersPerRealm
 }
 
+func (e *Exporter) exportAllSecurityMetrics(ch chan<- prometheus.Metric) error {
+	for metricName, metric := range securityMetrics {
+		switch metricName {
+		case "users":
+			err := e.exportUsersCount(metricName, metric, ch)
+			if err != nil {
+				return err
+			}
+		case "groups":
+			err := e.exportGroups(metricName, metric, ch)
+			if err != nil {
+				return err
+			}
+		case "certificates":
+			err := e.exportCertificates(metricName, metric, ch)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if err := e.exportReplications(ch); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *Exporter) exportUsersCount(metricName string, metric *prometheus.Desc, ch chan<- prometheus.Metric) error {
 	// Fetch Artifactory Users
 	users, err := e.client.FetchUsers()
