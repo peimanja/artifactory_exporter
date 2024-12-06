@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,41 +17,50 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
+	openMetricsString := openMetrics.PromMetrics
 	e.logger.Debug(
 		"OpenMetrics from Artifactory util",
-		"body", openMetrics.PromMetrics,
+		"body", openMetricsString,
 	)
-
-	openMetricsString := openMetrics.PromMetrics
-
 	parser := expfmt.TextParser{}
 	metrics, err := parser.TextToMetricFamilies(strings.NewReader(openMetricsString))
 	if err != nil {
-		return err
+		e.logger.Error(
+			"Openmetrics downloaded from artifactory cannot be parsed using the “github.com/prometheus/common/expfmt”.",
+			"err", err.Error(),
+			"response.body", openMetricsString,
+		)
+		return fmt.Errorf(
+			"problem when parsing openmetrics downloaded from artifactory: %w",
+			err,
+		)
 	}
 
+	createDesc := func(fn, fh string, m *ioPrometheusClient.Metric) *prometheus.Desc {
+		labels := make(map[string]string)
+		for _, label := range m.Label {
+			labels[*label.Name] = *label.Value
+		}
+		return prometheus.NewDesc(fn, fh, nil, labels)
+	}
 	for _, family := range metrics {
+		fName := family.GetName()
+		fHelp := family.GetHelp()
 		for _, metric := range family.Metric {
-			// create labels map
-			labels := make(map[string]string)
-			for _, label := range metric.Label {
-				labels[*label.Name] = *label.Value
-			}
-
-			// create a new descriptor
-			desc := prometheus.NewDesc(
-				family.GetName(),
-				family.GetHelp(),
-				nil,
-				labels,
-			)
-
-			// create a new metric and collect it
+			desc := createDesc(fName, fHelp, metric)
 			switch family.GetType() {
 			case ioPrometheusClient.MetricType_COUNTER:
-				ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, metric.GetCounter().GetValue())
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.CounterValue,
+					metric.GetCounter().GetValue(),
+				)
 			case ioPrometheusClient.MetricType_GAUGE:
-				ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, metric.GetGauge().GetValue())
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					metric.GetGauge().GetValue(),
+				)
 			}
 		}
 	}
