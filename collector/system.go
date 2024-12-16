@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"strconv"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -81,7 +83,7 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 }
 
 func (e *Exporter) exportSystemHALicenses(ch chan<- prometheus.Metric) error {
-	licenses, err := e.client.FetchLicenses()
+	licensesInfo, err := e.client.FetchLicenses()
 	if err != nil {
 		e.logger.Error(
 			"Couldn't scrape Artifactory when fetching system/licenses",
@@ -107,9 +109,9 @@ func (e *Exporter) exportSystemHALicenses(ch chan<- prometheus.Metric) error {
 			licenseInfo.TypeNormalized(),
 			licenseInfo.ValidThrough,
 			licenseInfo.LicensedTo,
-			license.NodeUrl,
-			license.LicenseHash,
-			strconv.FormatBool(license.Expired),
+			licenseInfo.NodeUrl,
+			licenseInfo.LicenseHash,
+			strconv.FormatBool(licenseInfo.Expired),
 			licenseInfo.NodeId,
 		)
 	}
