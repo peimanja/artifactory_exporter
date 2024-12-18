@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	pingEndpoint    = "system/ping"
-	versionEndpoint = "system/version"
-	licenseEndpoint = "system/license"
+	pingEndpoint     = "system/ping"
+	versionEndpoint  = "system/version"
+	licenseEndpoint  = "system/license"
+	licensesEndpoint = "system/licenses"
 )
 
 type HealthStatus struct {
@@ -65,7 +66,7 @@ func (c *Client) FetchBuildInfo() (BuildInfo, error) {
 	return buildInfo, nil
 }
 
-// LicenseInfo represents API respond from license endpoint
+// LicenseInfo represents API response from license endpoint
 type LicenseInfo struct {
 	Type         string `json:"type"`
 	ValidThrough string `json:"validThrough"`
@@ -117,11 +118,40 @@ func (c *Client) FetchLicense() (LicenseInfo, error) {
 	}
 	licenseInfo.NodeId = resp.NodeId
 	if err := json.Unmarshal(resp.Body, &licenseInfo); err != nil {
-		c.logger.Error("There was an issue when try to unmarshal licenseInfo respond")
+		c.logger.Error("There was an issue when trying to unmarshal licenseInfo response")
 		return licenseInfo, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: licenseEndpoint,
 		}
 	}
 	return licenseInfo, nil
+}
+
+// LicensesInfo represents API response from licenses endpoint
+type LicensesInfo struct {
+	Licenses []struct {
+		LicenseInfo
+		NodeId       string `json:"nodeId"`
+		NodeUrl      string `json:"nodeUrl"`
+		LicenseHash  string `json:"licenseHash"`
+		Expired      bool   `json:"expired"`
+	} `json:"licenses"`
+}
+
+// FetchLicenses makes the API call to licenses endpoint and returns LicensesInfo
+func (c *Client) FetchLicenses() (LicensesInfo, error) {
+	var licensesInfo LicensesInfo
+	c.logger.Debug("Fetching HA licenses stats")
+	resp, err := c.FetchHTTP(licensesEndpoint)
+	if err != nil {
+		return licensesInfo, err
+	}
+	if err := json.Unmarshal(resp.Body, &licensesInfo); err != nil {
+		c.logger.Error("There was an issue when trying to unmarshal licensesInfo response")
+		return licensesInfo, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: licensesEndpoint,
+		}
+	}
+	return licensesInfo, nil
 }

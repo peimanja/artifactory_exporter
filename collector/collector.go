@@ -51,9 +51,10 @@ var (
 	}
 
 	systemMetrics = metrics{
-		"healthy": newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", defaultLabelNames),
-		"version": newMetric("version", "system", "Version and revision of Artifactory as labels.", append([]string{"version", "revision"}, defaultLabelNames...)),
-		"license": newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", append([]string{"type", "licensed_to", "expires"}, defaultLabelNames...)),
+		"healthy":  newMetric("healthy", "system", "Is Artifactory working properly (1 = healthy).", defaultLabelNames),
+		"version":  newMetric("version", "system", "Version and revision of Artifactory as labels.", append([]string{"version", "revision"}, defaultLabelNames...)),
+		"license":  newMetric("license", "system", "License type and expiry as labels, seconds to expiration as value", append([]string{"type", "licensed_to", "expires"}, defaultLabelNames...)),
+		"licenses": newMetric("licenses", "system", "License type and expiry as labels, seconds to expiration as value", append([]string{"type", "valid_through", "licensed_to", "node_url", "license_hash", "expires"}, defaultLabelNames...)),
 	}
 
 	artifactsMetrics = metrics{
@@ -145,6 +146,11 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 		return 0
 	}
 
+	// Collect and export system HA licenses metrics
+	if err := e.exportSystemHALicenses(ch); err != nil {
+		return 0
+	}
+	
 	// Fetch Storage Info stats and register them
 	storageInfo, err := e.client.FetchStorageInfo()
 	if err != nil {
