@@ -72,6 +72,9 @@ var (
 	openMetrics = metrics{
 		"openMetrics": newMetric("open_metrics", "openmetrics", "OpenMetrics proxied from JFrog Platform", defaultLabelNames),
 	}
+	accessMetrics = metrics{
+		"accessFederationValid": newMetric("access_federation_valid", "access", "Is JFrog Access Federation valid (1 = Circle of Trust validated)", defaultLabelNames),
+	}
 )
 
 func init() {
@@ -105,6 +108,11 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	}
 	if e.optionalMetrics.OpenMetrics {
 		for _, m := range openMetrics {
+			ch <- m
+		}
+	}
+	if e.optionalMetrics.AccessFederationValidate {
+		for _, m := range accessMetrics {
 			ch <- m
 		}
 	}
@@ -179,6 +187,11 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	if e.optionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)
+	}
+
+	// Get Access Federation Validation metric
+	if e.optionalMetrics.AccessFederationValidate {
+		e.exportAccessFederationValidate(ch)
 	}
 
 	return 1
