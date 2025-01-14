@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"slices"
+	"strings"
 )
 
 const (
@@ -39,7 +40,7 @@ var (
 	}
 )
 
-func (c *Client) makeRequest(method string, path string, body []byte) (*http.Response, error) {
+func (c *Client) makeRequest(method string, path string, body []byte, headers **map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, bytes.NewBuffer(body))
 	if err != nil {
 		c.logger.Error(
@@ -55,6 +56,11 @@ func (c *Client) makeRequest(method string, path string, body []byte) (*http.Res
 		req.Header.Add("Authorization", "Bearer "+c.cred.AccessToken)
 	default:
 		return nil, fmt.Errorf("Artifactory Auth (%s) method is not supported", c.authMethod)
+	}
+	if headers != nil {
+		for key, value := range **headers {
+			req.Header.Set(key, value)
+		}
 	}
 	return c.client.Do(req)
 }
@@ -93,7 +99,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 		"Fetching http",
 		"path", fullPath,
 	)
-	resp, err := c.makeRequest("GET", fullPath, nil)
+	resp, err := c.makeRequest("GET", fullPath, nil, nil)
 	if err != nil {
 		c.logger.Error(
 			logMsgErrAPICall,
@@ -156,7 +162,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 		"Running AQL query",
 		"path", fullPath,
 	)
-	resp, err := c.makeRequest("POST", fullPath, query)
+	resp, err := c.makeRequest("POST", fullPath, query, nil)
 	if err != nil {
 		c.logger.Error(
 			logMsgErrAPICall,
@@ -180,5 +186,76 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 		return nil, err
 	}
 	response.Body = bodyBytes
+	return &response, nil
+}
+
+// PostHTTP is a wrapper function for making all Post API calls
+// Note: the API endpoint (e.g. "/artifactory" or "/access") needs to be part of path
+func (c *Client) PostHTTP(path string, body []byte, headers *map[string]string) (*ApiResponse, error) {
+	var response ApiResponse
+
+	artifactoryURI := strings.TrimSuffix(c.URI, "/artifactory")
+	fullPath := fmt.Sprintf("%s/%s", artifactoryURI, path)
+
+	c.logger.Debug(
+		"Posting http",
+		"path", fullPath,
+	)
+
+	resp, err := c.makeRequest("POST", fullPath, body, &headers)
+	c.logger.Debug(
+		"Received response with",
+		"status", resp.StatusCode,
+	)
+	if err != nil {
+		c.logger.Error(
+			logMsgErrAPICall,
+			"endpoint", fullPath,
+			"err", err.Error(),
+		)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		var apiErrors APIErrors
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		if err := json.Unmarshal(bodyBytes, &apiErrors); err != nil {
+			c.logger.Error(
+				logMsgErrUnmarshall,
+				"err", err,
+			)
+			return nil, &UnmarshalError{
+				message:  err.Error(),
+				endpoint: fullPath,
+			}
+		}
+		c.logger.Warn(
+			"The endpoint does not exist",
+			"endpoint", fullPath,
+			"err", fmt.Sprintf("%v", apiErrors.Errors),
+			"status", http.StatusNotFound,
+		)
+		return nil, &APIError{
+			message:  fmt.Sprintf("%v", apiErrors.Errors),
+			endpoint: fullPath,
+			status:   http.StatusNotFound,
+		}
+	}
+
+	if !slices.Contains(httpSuccCodes, resp.StatusCode) {
+		return c.procRespErr(resp, fullPath)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		c.logger.Error(
+			"There was an error reading response body",
+			"err", err.Error(),
+		)
+		return nil, err
+	}
+	response.Body = bodyBytes
+
 	return &response, nil
 }
