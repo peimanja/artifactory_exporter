@@ -203,6 +203,7 @@ Supported optional metrics:
 * `replication_status` - Extracts status of replication for each repository which has replication enabled. Enabling this will add the `status` label to `artifactory_replication_enabled` metric.
 * `federation_status` - Extracts federation metrics. Enabling this will add two new metrics: `artifactory_federation_mirror_lag`, and `artifactory_federation_unavailable_mirror`. Please note that these metrics are only available in Artifactory Enterprise Plus and version 7.18.3 and above.
 * `open_metrics` - Exposes Open Metrics from the JFrog Platform. For more information about Open Metrics, please refer to [JFrog Platform Open Metrics](https://jfrog.com/help/r/jfrog-platform-administration-documentation/open-metrics).
+* `access_federation_validate` - Validates whether trust is established towards a given JFrog Access Federation target server. Requires optional parameter `access-federation-target` to be set to the URL of the target server as well as token-based authentication. For more information, please refer to [JFrog Access Federation Circle of Trust validation](https://jfrog.com/help/r/jfrog-rest-apis/validate-target-for-circle-of-trust).
 
 ### Grafana Dashboard
 

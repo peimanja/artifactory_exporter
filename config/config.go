@@ -25,7 +25,7 @@ var (
 	accessFederationTarget = kingpin.Flag("access-federation-target", "URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled").Envar("ACCESS_FEDERATION_TARGET").String()
 )
 
-var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics"}
+var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate"}
 
 // Credentials represents Username and Password or API Key for
 // Artifactory Authentication
