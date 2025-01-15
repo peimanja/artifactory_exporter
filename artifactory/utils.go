@@ -13,6 +13,7 @@ import (
 const (
 	logMsgErrAPICall    = "There was an error making API call"
 	logMsgErrUnmarshall = "There was an error when trying to unmarshal the API Error"
+	logMsgErrRespBody   = "There was an error reading response body"
 )
 
 // APIErrors represents Artifactory API Error response
@@ -144,7 +145,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.logger.Error(
-			"There was an error reading response body",
+			logMsgErrRespBody,
 			"err", err.Error(),
 		)
 		return nil, err
@@ -180,7 +181,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.logger.Error(
-			"There was an error reading response body",
+			logMsgErrRespBody,
 			"err", err.Error(),
 		)
 		return nil, err
@@ -250,7 +251,7 @@ func (c *Client) PostHTTP(path string, body []byte, headers *map[string]string) 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.logger.Error(
-			"There was an error reading response body",
+			logMsgErrRespBody,
 			"err", err.Error(),
 		)
 		return nil, err
