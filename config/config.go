@@ -14,17 +14,18 @@ import (
 )
 
 var (
-	flagLogFormat   = kingpin.Flag(l.FormatFlagName, l.FormatFlagHelp).Default(l.FormatDefault).Enum(l.FormatsAvailable...)
-	flagLogLevel    = kingpin.Flag(l.LevelFlagName, l.LevelFlagHelp).Default(l.LevelDefault).Enum(l.LevelsAvailable...)
-	listenAddress   = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
-	metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
-	artiScrapeURI   = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape JFrog Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
-	artiSSLVerify   = kingpin.Flag("artifactory.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI").Envar("ARTI_SSL_VERIFY").Default("false").Bool()
-	artiTimeout     = kingpin.Flag("artifactory.timeout", "Timeout for trying to get stats from JFrog Artifactory.").Envar("ARTI_TIMEOUT").Default("5s").Duration()
-	optionalMetrics = kingpin.Flag("optional-metric", "optional metric to be enabled. Pass multiple times to enable multiple optional metrics.").PlaceHolder("metric-name").Strings()
+	flagLogFormat          = kingpin.Flag(l.FormatFlagName, l.FormatFlagHelp).Default(l.FormatDefault).Enum(l.FormatsAvailable...)
+	flagLogLevel           = kingpin.Flag(l.LevelFlagName, l.LevelFlagHelp).Default(l.LevelDefault).Enum(l.LevelsAvailable...)
+	listenAddress          = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Envar("WEB_LISTEN_ADDR").Default(":9531").String()
+	metricsPath            = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
+	artiScrapeURI          = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape JFrog Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
+	artiSSLVerify          = kingpin.Flag("artifactory.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI").Envar("ARTI_SSL_VERIFY").Default("false").Bool()
+	artiTimeout            = kingpin.Flag("artifactory.timeout", "Timeout for trying to get stats from JFrog Artifactory.").Envar("ARTI_TIMEOUT").Default("5s").Duration()
+	optionalMetrics        = kingpin.Flag("optional-metric", "optional metric to be enabled. Pass multiple times to enable multiple optional metrics.").PlaceHolder("metric-name").Strings()
+	accessFederationTarget = kingpin.Flag("access-federation-target", "URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled").Envar("ACCESS_FEDERATION_TARGET").String()
 )
 
-var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics"}
+var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate"}
 
 // Credentials represents Username and Password or API Key for
 // Artifactory Authentication
@@ -36,22 +37,24 @@ type Credentials struct {
 }
 
 type OptionalMetrics struct {
-	Artifacts         bool
-	ReplicationStatus bool
-	FederationStatus  bool
-	OpenMetrics       bool
+	Artifacts                bool
+	ReplicationStatus        bool
+	FederationStatus         bool
+	OpenMetrics              bool
+	AccessFederationValidate bool
 }
 
 // Config represents all configuration options for running the Exporter.
 type Config struct {
-	ListenAddress   string
-	MetricsPath     string
-	ArtiScrapeURI   string
-	Credentials     *Credentials
-	ArtiSSLVerify   bool
-	ArtiTimeout     time.Duration
-	OptionalMetrics OptionalMetrics
-	Logger          *slog.Logger
+	ListenAddress          string
+	MetricsPath            string
+	ArtiScrapeURI          string
+	Credentials            *Credentials
+	ArtiSSLVerify          bool
+	ArtiTimeout            time.Duration
+	OptionalMetrics        OptionalMetrics
+	AccessFederationTarget string
+	Logger                 *slog.Logger
 }
 
 // NewConfig Creates Config for Artifactory exporter
@@ -90,9 +93,20 @@ func NewConfig() (*Config, error) {
 			optMetrics.FederationStatus = true
 		case "open_metrics":
 			optMetrics.OpenMetrics = true
+		case "access_federation_validate":
+			optMetrics.AccessFederationValidate = true
 		default:
 			return nil, fmt.Errorf("unknown optional metric: %s. Valid optional metrics are: %s", metric, optionalMetricsList)
 		}
+	}
+
+	if *accessFederationTarget != "" {
+		_, err = url.Parse(*accessFederationTarget)
+		if err != nil {
+			return nil, err
+		}
+	} else if optMetrics.AccessFederationValidate {
+		return nil, fmt.Errorf("JFrog Access Federation target URL must be set if optional metric AccessFederationValidate is enabled.")
 	}
 
 	logger := l.New(
@@ -102,14 +116,15 @@ func NewConfig() (*Config, error) {
 		},
 	)
 	return &Config{
-		ListenAddress:   *listenAddress,
-		MetricsPath:     *metricsPath,
-		ArtiScrapeURI:   *artiScrapeURI,
-		Credentials:     &credentials,
-		ArtiSSLVerify:   *artiSSLVerify,
-		ArtiTimeout:     *artiTimeout,
-		OptionalMetrics: optMetrics,
-		Logger:          logger,
+		ListenAddress:          *listenAddress,
+		MetricsPath:            *metricsPath,
+		ArtiScrapeURI:          *artiScrapeURI,
+		Credentials:            &credentials,
+		ArtiSSLVerify:          *artiSSLVerify,
+		ArtiTimeout:            *artiTimeout,
+		OptionalMetrics:        optMetrics,
+		AccessFederationTarget: *accessFederationTarget,
+		Logger:                 logger,
 	}, nil
 
 }
