@@ -33,17 +33,24 @@ type MirrorLags struct {
 func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	var mirrorLags MirrorLags
 	c.logger.Debug("Fetching mirror lags")
+
 	resp, err := c.FetchHTTP(federationMirrorsLagEndpoint)
 	if err != nil {
-		if err.(*APIError).status == 404 {
+		var apiErr *APIError
+		var urlErr *url.Error
+		if errors.As(err, &apiErr) && apiErr.status == 404 {
 			return mirrorLags, nil
+		} else if errors.As(err, &urlErr) {
+			c.logger.Error("URL error while fetching mirror lags: ", urlErr)
+			return mirrorLags, err
+		} else {
+			return mirrorLags, err
 		}
-		return mirrorLags, err
 	}
 	mirrorLags.NodeId = resp.NodeId
 
 	if err := json.Unmarshal(resp.Body, &mirrorLags.MirrorLags); err != nil {
-		c.logger.Error("There was an issue when try to unmarshal mirror lags respond")
+		c.logger.Error("There was an issue when trying to unmarshal mirror lags response: ", err)
 		return mirrorLags, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: federationMirrorsLagEndpoint,
@@ -53,34 +60,31 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	return mirrorLags, nil
 }
 
-// UnavailableMirror represents single element of API respond from federation/status/unavailableMirrors endpoint
-type UnavailableMirror struct {
-	LocalRepoKey  string `json:"localRepoKey"`
-	RemoteUrl     string `json:"remoteUrl"`
-	RemoteRepoKey string `json:"remoteRepoKey"`
-	Status        string `json:"status"`
-}
-
-type UnavailableMirrors struct {
-	UnavailableMirrors []UnavailableMirror
-	NodeId             string
-}
-
 // FetchUnavailableMirrors makes the API call to federation/status/unavailableMirrors endpoint and returns []UnavailableMirror
 func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 	var unavailableMirrors UnavailableMirrors
 	c.logger.Debug("Fetching unavailable mirrors")
-	resp, err := c.FetchHTTP(federationUnavailableMirrorsEndpoint)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // Set a timeout duration
+	defer cancel()
+
+	resp, err := c.FetchHTTPWithContext(ctx, federationUnavailableMirrorsEndpoint) // Assume FetchHTTPWithContext handles context
 	if err != nil {
-		if err.(*APIError).status == 404 {
+		var apiErr *APIError
+		var urlErr *url.Error
+		if errors.As(err, &apiErr) && apiErr.status == 404 {
 			return unavailableMirrors, nil
+		} else if errors.As(err, &urlErr) {
+			c.logger.Error("URL error while fetching unavailable mirrors: ", urlErr)
+			return unavailableMirrors, err
+		} else {
+			return unavailableMirrors, err
 		}
-		return unavailableMirrors, err
 	}
 	unavailableMirrors.NodeId = resp.NodeId
 
 	if err := json.Unmarshal(resp.Body, &unavailableMirrors.UnavailableMirrors); err != nil {
-		c.logger.Error("There was an issue when try to unmarshal unavailable mirrors respond")
+		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response: ", err)
 		return unavailableMirrors, &UnmarshalError{
 			message:  err.Error(),
 			endpoint: federationUnavailableMirrorsEndpoint,
