@@ -17,7 +17,7 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	openMetricsString := openMetrics.PromMetrics
+	openMetricsString := sanitizeOpenMetrics(openMetrics.PromMetrics)
 	e.logger.Debug(
 		"OpenMetrics from Artifactory util",
 		"body", openMetricsString,
@@ -66,4 +66,22 @@ func (e *Exporter) exportOpenMetrics(ch chan<- prometheus.Metric) error {
 	}
 
 	return nil
+}
+
+// sanitizeOpenMetrics sanitizes the OpenMetrics string
+func sanitizeOpenMetrics(input string) string {
+	lines := strings.Split(input, "\n")
+	var result []string
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "# HELP") || strings.HasPrefix(line, "# TYPE") {
+			line = strings.ReplaceAll(line, `\"`, `"`)
+		}
+		if strings.HasPrefix(line, "# EOF") {
+			continue
+		}
+		result = append(result, line)
+	}
+
+	return strings.Join(result, "\n")
 }
