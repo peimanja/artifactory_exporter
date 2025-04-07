@@ -64,6 +64,6 @@ func (c *Client) FetchHTTPWithContext(ctx context.Context, endpoint string) (*Ap
 
 	return &ApiResponse{
 		Body:       body,
-		NodeId:     resp.Header.Get("X-Node-Id"),
+		NodeId: resp.Header.Get("X-Artifactory-Node-Id"),
 	}, nil
 }
