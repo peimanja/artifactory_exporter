@@ -44,6 +44,7 @@ func (c *Client) GetAccessFederationTarget() string {
 	return c.accessFederationTarget
 }
 
+// FetchHTTPWithContext makes a GET request to the Artifactory API with a context-aware timeout.
 func (c *Client) FetchHTTPWithContext(ctx context.Context, endpoint string) (*ApiResponse, error) {
 	fullURL := fmt.Sprintf("%s/api/%s", c.URI, endpoint)
 	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
