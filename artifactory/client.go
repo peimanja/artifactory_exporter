@@ -1,7 +1,10 @@
 package artifactory
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -39,4 +42,28 @@ func NewClient(conf *config.Config) *Client {
 
 func (c *Client) GetAccessFederationTarget() string {
 	return c.accessFederationTarget
+}
+
+func (c *Client) FetchHTTPWithContext(ctx context.Context, endpoint string) (*ApiResponse, error) {
+	fullURL := fmt.Sprintf("%s/api/%s", c.URI, endpoint)
+	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApiResponse{
+		Body:       body,
+		NodeId:     resp.Header.Get("X-Node-Id"),
+	}, nil
 }

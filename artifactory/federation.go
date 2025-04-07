@@ -1,7 +1,11 @@
 package artifactory
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/url"
+	"time"
 )
 
 const federationMirrorsLagEndpoint = "federation/status/mirrorsLag"
@@ -27,6 +31,20 @@ type MirrorLag struct {
 type MirrorLags struct {
 	MirrorLags []MirrorLag
 	NodeId     string
+}
+
+type UnavailableMirror struct {
+	RepoKey       string `json:"repoKey"`
+	NodeId        string `json:"nodeId"`
+	Status        string `json:"status"`
+	LocalRepoKey  string `json:"localRepoKey"`
+	RemoteUrl     string `json:"remoteUrl"`
+	RemoteRepoKey string `json:"remoteRepoKey"`
+}
+
+type UnavailableMirrors struct {
+	UnavailableMirrors []UnavailableMirror
+	NodeId             string
 }
 
 // FetchMirrorLags makes the API call to federation/status/mirrorsLag endpoint and returns []MirrorLag
