@@ -83,10 +83,10 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 	var unavailableMirrors UnavailableMirrors
 	c.logger.Debug("Fetching unavailable mirrors")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // Set a timeout duration
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	resp, err := c.FetchHTTPWithContext(ctx, federationUnavailableMirrorsEndpoint) // Assume FetchHTTPWithContext handles context
+	resp, err := c.FetchHTTPWithContext(ctx, federationUnavailableMirrorsEndpoint)
 	if err != nil {
 		var apiErr *APIError
 		var urlErr *url.Error
