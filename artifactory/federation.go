@@ -22,15 +22,16 @@ func (c *Client) IsFederationEnabled() bool {
 
 // MirrorLag represents single element of API respond from federation/status/mirrorsLag endpoint
 type MirrorLag struct {
-	LocalRepoKey  string `json:"localRepoKey"`
-	RemoteUrl     string `json:"remoteUrl"`
-	RemoteRepoKey string `json:"remoteRepoKey"`
-	LagInMS       int    `json:"lagInMS"`
+	LocalRepoKey               string `json:"localRepoKey"`
+	RemoteUrl                  string `json:"remoteUrl"`
+	RemoteRepoKey              string `json:"remoteRepoKey"`
+	LagInMS                    int    `json:"lagInMS"`
+	EventRegistrationTimeStamp int64  `json:"eventRegistrationTimeStamp"`
 }
 
 type MirrorLags struct {
-	MirrorLags []MirrorLag
-	NodeId     string
+	MirrorLags []MirrorLag `json:"mirrorLags"`
+	NodeId     string      `json:"nodeId"`
 }
 
 type UnavailableMirror struct {
@@ -43,8 +44,8 @@ type UnavailableMirror struct {
 }
 
 type UnavailableMirrors struct {
-	UnavailableMirrors []UnavailableMirror
-	NodeId             string
+	UnavailableMirrors []UnavailableMirror `json:"unavailableMirrors"`
+	NodeId             string              `json:"nodeId"`
 }
 
 // FetchMirrorLags makes the API call to federation/status/mirrorsLag endpoint and returns []MirrorLag
@@ -67,13 +68,13 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	}
 	mirrorLags.NodeId = resp.NodeId
 
-	if err := json.Unmarshal(resp.Body, &mirrorLags.MirrorLags); err != nil {
+	var mirrorLagsData []MirrorLag
+	err = json.Unmarshal(resp.Body, &mirrorLagsData)
+	if err != nil {
 		c.logger.Error("There was an issue when trying to unmarshal mirror lags response: ", err)
-		return mirrorLags, &UnmarshalError{
-			message:  err.Error(),
-			endpoint: federationMirrorsLagEndpoint,
-		}
+		return mirrorLags, err
 	}
+	mirrorLags.MirrorLags = mirrorLagsData
 
 	return mirrorLags, nil
 }
@@ -101,12 +102,10 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 	}
 	unavailableMirrors.NodeId = resp.NodeId
 
-	if err := json.Unmarshal(resp.Body, &unavailableMirrors.UnavailableMirrors); err != nil {
+	err = json.Unmarshal(resp.Body, &unavailableMirrors)
+	if err != nil {
 		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response: ", err)
-		return unavailableMirrors, &UnmarshalError{
-			message:  err.Error(),
-			endpoint: federationUnavailableMirrorsEndpoint,
-		}
+		return unavailableMirrors, err
 	}
 
 	return unavailableMirrors, nil
