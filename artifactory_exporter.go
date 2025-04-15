@@ -45,7 +45,14 @@ func main() {
 		"Listening on address",
 		"address", conf.ListenAddress,
 	)
-	http.Handle(conf.MetricsPath, promhttp.Handler())
+	http.HandleFunc(conf.MetricsPath, func(w http.ResponseWriter, r *http.Request) {
+		conf.Logger.Debug(
+			"Prometheus scrape",
+			"remote", r.RemoteAddr,
+			"user_agent", r.UserAgent(),
+		)
+		promhttp.Handler().ServeHTTP(w, r)
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
              <head><title>JFrog Artifactory Exporter</title></head>
