@@ -56,7 +56,7 @@ func (c *Client) FetchReplications() (Replications, error) {
 		}
 	}
 
-	if c.optionalMetrics.ReplicationStatus {
+	if c.OptionalMetrics.ReplicationStatus {
 		c.logger.Debug("Fetching replications status")
 		for i, replication := range replications.Replications {
 			var status ReplicationStatus
