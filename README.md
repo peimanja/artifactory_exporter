@@ -130,25 +130,25 @@ Flags:
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
       --optional-metric=metric-name ...
-                                optional metric to be enabled. Pass multiple times to enable multiple optional metrics.
+                                optional metric to be enabled. Valid metrics are: [artifacts replication_status federation_status open_metrics access_federation_validate background_tasks]. Pass multiple times to enable multiple optional metrics.
       --log.level=info          Only log messages with the given severity or above. One of: [debug, info, warn, error]
       --log.format=logfmt       Output format of log messages. One of: [logfmt, json]
       --version                 Show application version.
 ```
 
-| Flag / Environment Variable | Required | Default | Description |
-| --------------------------- | -------- | ------- | ----------- |
-| `web.listen-address`<br/>`WEB_LISTEN_ADDR` | No | `:9531`| Address to listen on for web interface and telemetry. |
-| `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH` | No | `/metrics` | Path under which to expose metrics. |
-| `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory. |
-| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No | `true` | Flag that enables SSL certificate verification for the scrape URI. |
-| `artifactory.timeout`<br/>`ARTI_TIMEOUT` | No | `5s` | Timeout for trying to get stats from JFrog Artifactory. |
-| `optional-metric`| No | | optional metric to be enabled. Pass multiple times to enable multiple optional metrics. |
-| `log.level` | No | `info` | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
-| `log.format` | No | `logfmt` | Output format of log messages. One of: [logfmt, json]. |
-| `ARTI_USERNAME` | *No | | User to access Artifactory |
-| `ARTI_PASSWORD` | *No | | Password of the user accessing the Artifactory |
-| `ARTI_ACCESS_TOKEN` | *No | | Access token for accessing the Artifactory |
+| Flag / Environment Variable                    | Required | Default                             | Description                                                                             |
+| ---------------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `web.listen-address`<br/>`WEB_LISTEN_ADDR`     | No       | `:9531`                             | Address to listen on for web interface and telemetry.                                   |
+| `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH`  | No       | `/metrics`                          | Path under which to expose metrics.                                                     |
+| `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No       | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory.                                               |
+| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No       | `true`                              | Flag that enables SSL certificate verification for the scrape URI.                      |
+| `artifactory.timeout`<br/>`ARTI_TIMEOUT`       | No       | `5s`                                | Timeout for trying to get stats from JFrog Artifactory.                                 |
+| `optional-metric`                              | No       |                                     | optional metric to be enabled. Pass multiple times to enable multiple optional metrics. |
+| `log.level`                                    | No       | `info`                              | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
+| `log.format`                                   | No       | `logfmt`                            | Output format of log messages. One of: [logfmt, json].                                  |
+| `ARTI_USERNAME`                                | *No      |                                     | User to access Artifactory                                                              |
+| `ARTI_PASSWORD`                                | *No      |                                     | Password of the user accessing the Artifactory                                          |
+| `ARTI_ACCESS_TOKEN`                            | *No      |                                     | Access token for accessing the Artifactory                                              |
 
 * Either `ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variables has to be set.
 
@@ -156,39 +156,39 @@ Flags:
 
 Some metrics are not available with Artifactory OSS license. The exporter returns the following metrics:
 
-| Metric | Description | Labels | OSS support |
-| ------ | ----------- | ------ | ------ |
-| artifactory_up | Was the last scrape of Artifactory successful. |  | &#9989; |
-| artifactory_exporter_build_info | Exporter build information. | `version`, `revision`, `branch`, `goversion` | &#9989; |
-| artifactory_exporter_total_scrapes | Current total artifactory scrapes. |  | &#9989; |
-| artifactory_exporter_total_api_errors | Current total Artifactory API errors when scraping for stats. |  | &#9989; |
-| artifactory_exporter_json_parse_failures |Number of errors while parsing Json. |  | &#9989; |
-| artifactory_replication_enabled | Replication status for an Artifactory repository (1 = enabled). | `name`, `type`, `cron_exp`, `status` | |
-| artifactory_security_certificates | SSL certificate name and expiry as labels, seconds to expiration as value | `alias`, `expires`, `issued_by` | |
-| artifactory_security_groups | Number of Artifactory groups. | | |
-| artifactory_security_users | Number of Artifactory users for each realm. | `realm` | |
-| artifactory_storage_artifacts | Total artifacts count stored in Artifactory. |  | &#9989; |
-| artifactory_storage_artifacts_size_bytes | Total artifacts Size stored in Artifactory in bytes. |  | &#9989; |
-| artifactory_storage_binaries | Total binaries count stored in Artifactory. |  | &#9989; |
-| artifactory_storage_binaries_size_bytes | Total binaries Size stored in Artifactory in bytes. |  | &#9989; |
-| artifactory_storage_filestore_bytes | Total space in the file store in bytes. | `storage_dir`, `storage_type` | &#9989; |
-| artifactory_storage_filestore_used_bytes | Space used in the file store in bytes. | `storage_dir`, `storage_type` | &#9989; |
-| artifactory_storage_filestore_free_bytes | Space free in the file store in bytes. | `storage_dir`, `storage_type` | &#9989; |
-| artifactory_storage_repo_used_bytes | Space used by an Artifactory repository in bytes. | `name`, `package_type`, `type` | &#9989; |
-| artifactory_storage_repo_folders | Number of folders in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
-| artifactory_storage_repo_files | Number files in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
-| artifactory_storage_repo_items | Number Items in an Artifactory repository. | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_created_1m | Number of artifacts created in the repo (last 1 minute). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_created_5m | Number of artifacts created in the repo (last 5 minutes). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_created_15m | Number of artifacts created in the repo (last 15 minutes). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_downloaded_1m | Number of artifacts downloaded from the repository (last 1 minute). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_downloaded_5m | Number of artifacts downloaded from the repository (last 5 minutes). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_artifacts_downloaded_15m | Number of artifacts downloaded from the repository (last 15 minute). | `name`, `package_type`, `type` | &#9989; |
-| artifactory_system_healthy | Is Artifactory working properly (1 = healthy). | | &#9989; |
-| artifactory_system_license | License type and expiry as labels, seconds to expiration as value | `type`, `licensed_to`, `expires` | &#9989; |
-| artifactory_system_version | Version and revision of Artifactory as labels. | `version`, `revision` | &#9989; |
-| artifactory_federation_mirror_lag | Federation mirror lag in milliseconds. | `name`, `remote_url`, `remote_name` | |
-| artifactory_federation_unavailable_mirror | Unsynchronized federated mirror status. | `status`, `name`, `remote_url`, `remote_name` | |
+| Metric                                    | Description                                                               | Labels                                        | OSS support |
+| ----------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------- | ----------- |
+| artifactory_up                            | Was the last scrape of Artifactory successful.                            |                                               | &#9989;     |
+| artifactory_exporter_build_info           | Exporter build information.                                               | `version`, `revision`, `branch`, `goversion`  | &#9989;     |
+| artifactory_exporter_total_scrapes        | Current total artifactory scrapes.                                        |                                               | &#9989;     |
+| artifactory_exporter_total_api_errors     | Current total Artifactory API errors when scraping for stats.             |                                               | &#9989;     |
+| artifactory_exporter_json_parse_failures  | Number of errors while parsing Json.                                      |                                               | &#9989;     |
+| artifactory_replication_enabled           | Replication status for an Artifactory repository (1 = enabled).           | `name`, `type`, `cron_exp`, `status`          |             |
+| artifactory_security_certificates         | SSL certificate name and expiry as labels, seconds to expiration as value | `alias`, `expires`, `issued_by`               |             |
+| artifactory_security_groups               | Number of Artifactory groups.                                             |                                               |             |
+| artifactory_security_users                | Number of Artifactory users for each realm.                               | `realm`                                       |             |
+| artifactory_storage_artifacts             | Total artifacts count stored in Artifactory.                              |                                               | &#9989;     |
+| artifactory_storage_artifacts_size_bytes  | Total artifacts Size stored in Artifactory in bytes.                      |                                               | &#9989;     |
+| artifactory_storage_binaries              | Total binaries count stored in Artifactory.                               |                                               | &#9989;     |
+| artifactory_storage_binaries_size_bytes   | Total binaries Size stored in Artifactory in bytes.                       |                                               | &#9989;     |
+| artifactory_storage_filestore_bytes       | Total space in the file store in bytes.                                   | `storage_dir`, `storage_type`                 | &#9989;     |
+| artifactory_storage_filestore_used_bytes  | Space used in the file store in bytes.                                    | `storage_dir`, `storage_type`                 | &#9989;     |
+| artifactory_storage_filestore_free_bytes  | Space free in the file store in bytes.                                    | `storage_dir`, `storage_type`                 | &#9989;     |
+| artifactory_storage_repo_used_bytes       | Space used by an Artifactory repository in bytes.                         | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_storage_repo_folders          | Number of folders in an Artifactory repository.                           | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_storage_repo_files            | Number files in an Artifactory repository.                                | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_storage_repo_items            | Number Items in an Artifactory repository.                                | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_created_1m          | Number of artifacts created in the repo (last 1 minute).                  | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_created_5m          | Number of artifacts created in the repo (last 5 minutes).                 | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_created_15m         | Number of artifacts created in the repo (last 15 minutes).                | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_downloaded_1m       | Number of artifacts downloaded from the repository (last 1 minute).       | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_downloaded_5m       | Number of artifacts downloaded from the repository (last 5 minutes).      | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_downloaded_15m      | Number of artifacts downloaded from the repository (last 15 minute).      | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_system_healthy                | Is Artifactory working properly (1 = healthy).                            |                                               | &#9989;     |
+| artifactory_system_license                | License type and expiry as labels, seconds to expiration as value         | `type`, `licensed_to`, `expires`              | &#9989;     |
+| artifactory_system_version                | Version and revision of Artifactory as labels.                            | `version`, `revision`                         | &#9989;     |
+| artifactory_federation_mirror_lag         | Federation mirror lag in milliseconds.                                    | `name`, `remote_url`, `remote_name`           |             |
+| artifactory_federation_unavailable_mirror | Unsynchronized federated mirror status.                                   | `status`, `name`, `remote_url`, `remote_name` |             |
 
 * Common labels:
   * `node_id`: Artifactory node ID that the metric is scraped from.
