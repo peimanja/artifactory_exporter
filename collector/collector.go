@@ -20,15 +20,6 @@ var (
 	certificateLabelNames = append([]string{"alias", "issued_by", "expires"}, defaultLabelNames...)
 )
 
-// Define a global GaugeVec for background tasks
-var backgroundTaskMetrics = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "artifactory_background_tasks",
-		Help: "Number of Artifactory background tasks by type and state",
-	},
-	[]string{"type", "state"},
-)
-
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, metricName), docString, labelNames, nil)
 }
@@ -90,11 +81,12 @@ var (
 
 func init() {
 	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
-	prometheus.MustRegister(backgroundTaskMetrics)
 }
 
-// Describe describes all the metrics ever exported by the Artifactory exporter. It
-// implements prometheus.Collector.
+// Describe sends the descriptors of all metrics exported by the Artifactory exporter.
+// It implements prometheus.Collector.
+// Note: Metrics manually collected via Collect (like background task metrics)
+// do not appear here, as they are registered and exported independently.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range replicationMetrics {
 		ch <- m
@@ -135,28 +127,34 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.jsonParseFailures.Desc()
 }
 
-// Collect fetches the stats from  Artifactory and delivers them
+// Collect fetches the stats from Artifactory and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	e.logger.Debug(">> Collect() fired")
+	e.logger.Debug(">> Collect() fired") // Debug trace for scrape timing
 
+	// Prevent concurrent scrapes from clashing with metric updates
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// Execute data collection
 	up := e.scrape(ch)
+
+	// Export status and scrape counters
 	ch <- e.up
 	e.up.Set(up)
 
 	ch <- e.totalScrapes
 	ch <- e.totalAPIErrors
 	ch <- e.jsonParseFailures
+	// Manually collect background task metrics from the GaugeVec
+	e.backgroundTaskMetrics.Collect(ch)
 }
 
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
 	// Reset the metric to avoid duplicate data
-	backgroundTaskMetrics.Reset()
+	e.backgroundTaskMetrics.Reset()
 
 	// Collect and export open metrics
 	if e.optionalMetrics.OpenMetrics {
@@ -220,19 +218,20 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 			return 0
 		}
 
-		// Use a map to count occurrences of each (type, state) combination
+		// Collect background task metrics from Artifactory API
+		// Use a map to count each (type, state) combo, and avoid duplicate label sets
 		counter := make(map[[2]string]int)
 		for _, task := range tasks {
-			// Simplified extraction of class name from fully qualified Java type strings
+			// Extract the class name only (e.g. "BundleCleanupJob") to reduce cardinality
 			segments := strings.Split(task.Type, ".")
 			shortType := segments[len(segments)-1]
 			key := [2]string{shortType, task.State}
 			counter[key]++
 		}
 
-		// Set each unique label combination only once
+		// Set each unique label set only once to prevent scrape errors
 		for key, count := range counter {
-			backgroundTaskMetrics.WithLabelValues(key[0], key[1]).Set(float64(count))
+			e.backgroundTaskMetrics.WithLabelValues(key[0], key[1]).Set(float64(count))
 		}
 	}
 
