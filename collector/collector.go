@@ -150,10 +150,13 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	e.totalScrapes.Inc()
 
+	// Reset the metric to avoid duplicate data
+	backgroundTaskMetrics.Reset()
+
 	// Collect and export open metrics
 	if e.optionalMetrics.OpenMetrics {
 		err := e.exportOpenMetrics(ch)
-		if err != nil {
+		if (err != nil) {
 			return 0
 		}
 	}
@@ -211,9 +214,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 			e.logger.Error("Error fetching background tasks", "error", err)
 			return 0
 		}
-
-		// Reset the metric to avoid stale data
-		backgroundTaskMetrics.Reset()
 
 		for _, task := range tasks {
 			backgroundTaskMetrics.WithLabelValues(task.Type, task.State).Set(1)
