@@ -21,11 +21,11 @@ var (
 	artiScrapeURI          = kingpin.Flag("artifactory.scrape-uri", "URI on which to scrape JFrog Artifactory.").Envar("ARTI_SCRAPE_URI").Default("http://localhost:8081/artifactory").String()
 	artiSSLVerify          = kingpin.Flag("artifactory.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI").Envar("ARTI_SSL_VERIFY").Default("false").Bool()
 	artiTimeout            = kingpin.Flag("artifactory.timeout", "Timeout for trying to get stats from JFrog Artifactory.").Envar("ARTI_TIMEOUT").Default("5s").Duration()
-	optionalMetrics        = kingpin.Flag("optional-metric", "optional metric to be enabled. Pass multiple times to enable multiple optional metrics.").PlaceHolder("metric-name").Strings()
+	optionalMetrics        = kingpin.Flag("optional-metric", fmt.Sprintf("optional metric to be enabled. Valid metrics are: %v", optionalMetricsList)).PlaceHolder("metric-name").Strings()
 	accessFederationTarget = kingpin.Flag("access-federation-target", "URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled").Envar("ACCESS_FEDERATION_TARGET").String()
 )
 
-var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate"}
+var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate", "background_tasks"}
 
 // Credentials represents Username and Password or API Key for
 // Artifactory Authentication
@@ -36,12 +36,14 @@ type Credentials struct {
 	AccessToken string `required:"false" envconfig:"ARTI_ACCESS_TOKEN"`
 }
 
+// Updated OptionalMetrics struct to include YAML tags for better configuration management
 type OptionalMetrics struct {
-	Artifacts                bool
-	ReplicationStatus        bool
-	FederationStatus         bool
-	OpenMetrics              bool
-	AccessFederationValidate bool
+	Artifacts                bool `yaml:"artifacts"`
+	ReplicationStatus        bool `yaml:"replication_status"`
+	FederationStatus         bool `yaml:"federation_status"`
+	OpenMetrics              bool `yaml:"open_metrics"`
+	AccessFederationValidate bool `yaml:"access_federation_validate"`
+	BackgroundTasks          bool `yaml:"background_tasks"`
 }
 
 // Config represents all configuration options for running the Exporter.
@@ -95,8 +97,10 @@ func NewConfig() (*Config, error) {
 			optMetrics.OpenMetrics = true
 		case "access_federation_validate":
 			optMetrics.AccessFederationValidate = true
+		case "background_tasks":
+			optMetrics.BackgroundTasks = true
 		default:
-			return nil, fmt.Errorf("unknown optional metric: %s. Valid optional metrics are: %s", metric, optionalMetricsList)
+			return nil, fmt.Errorf("unknown optional metric: %s. Valid optional metrics are: %v", metric, optionalMetricsList)
 		}
 	}
 
