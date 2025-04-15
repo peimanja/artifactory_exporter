@@ -3,6 +3,7 @@ package artifactory
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,7 +17,7 @@ type Client struct {
 	URI                    string
 	authMethod             string
 	cred                   config.Credentials
-	optionalMetrics        config.OptionalMetrics
+	OptionalMetrics        config.OptionalMetrics
 	accessFederationTarget string
 	client                 *http.Client
 	logger                 *slog.Logger
@@ -33,7 +34,7 @@ func NewClient(conf *config.Config) *Client {
 		URI:                    conf.ArtiScrapeURI,
 		authMethod:             conf.Credentials.AuthMethod,
 		cred:                   *conf.Credentials,
-		optionalMetrics:        conf.OptionalMetrics,
+		OptionalMetrics:        conf.OptionalMetrics,
 		accessFederationTarget: conf.AccessFederationTarget,
 		client:                 client,
 		logger:                 conf.Logger,
@@ -67,4 +68,38 @@ func (c *Client) FetchHTTPWithContext(ctx context.Context, endpoint string) (*Ap
 		Body:       body,
 		NodeId: resp.Header.Get("X-Artifactory-Node-Id"),
 	}, nil
+}
+
+// FetchBackgroundTasks makes the API call to the background tasks endpoint and returns a list of tasks
+func (c *Client) FetchBackgroundTasks() ([]BackgroundTask, error) {
+	const backgroundTasksEndpoint = "tasks"
+
+	var tasksResponse struct {
+		Tasks []BackgroundTask `json:"tasks"`
+	}
+
+	c.logger.Debug("Fetching background tasks")
+	resp, err := c.FetchHTTP(backgroundTasksEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(resp.Body, &tasksResponse); err != nil {
+		c.logger.Error("There was an issue when trying to unmarshal background tasks response")
+		return nil, &UnmarshalError{
+			message:  err.Error(),
+			endpoint: backgroundTasksEndpoint,
+		}
+	}
+
+	return tasksResponse.Tasks, nil
+}
+
+// BackgroundTask represents a single background task in Artifactory
+type BackgroundTask struct {
+	ID          string `json:"id"`
+	Type        string `json:"type"`
+	State       string `json:"state"`
+	Description string `json:"description"`
+	NodeID      string `json:"nodeId"`
 }
