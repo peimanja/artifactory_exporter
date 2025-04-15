@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
 )
@@ -16,6 +18,15 @@ var (
 	replicationLabelNames = append([]string{"name", "type", "url", "cron_exp", "status"}, defaultLabelNames...)
 	federationLabelNames  = append([]string{"name", "remote_url", "remote_name"}, defaultLabelNames...)
 	certificateLabelNames = append([]string{"alias", "issued_by", "expires"}, defaultLabelNames...)
+)
+
+// Define a global GaugeVec for background tasks
+var backgroundTaskMetrics = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "artifactory_background_tasks",
+		Help: "Number of Artifactory background tasks by type and state",
+	},
+	[]string{"type", "state"},
 )
 
 func newMetric(metricName string, subsystem string, docString string, labelNames []string) *prometheus.Desc {
@@ -77,14 +88,6 @@ var (
 	}
 )
 
-var backgroundTaskMetrics = prometheus.NewGaugeVec(
-	prometheus.GaugeOpts{
-		Name: "artifactory_background_tasks",
-		Help: "Number of Artifactory background tasks by type and state.",
-	},
-	[]string{"type", "state"},
-)
-
 func init() {
 	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
 	prometheus.MustRegister(backgroundTaskMetrics)
@@ -135,7 +138,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // Collect fetches the stats from  Artifactory and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	e.mutex.Lock() // To protect metrics from concurrent collects.
+	e.logger.Debug(">> Collect() fired")
+
+	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	up := e.scrape(ch)
@@ -156,7 +161,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	// Collect and export open metrics
 	if e.optionalMetrics.OpenMetrics {
 		err := e.exportOpenMetrics(ch)
-		if (err != nil) {
+		if err != nil {
 			return 0
 		}
 	}
@@ -215,12 +220,20 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 			return 0
 		}
 
+		// Use a map to count occurrences of each (type, state) combination
+		counter := make(map[[2]string]int)
 		for _, task := range tasks {
-			backgroundTaskMetrics.WithLabelValues(task.Type, task.State).Set(1)
+			// Simplified extraction of class name from fully qualified Java type strings
+			segments := strings.Split(task.Type, ".")
+			shortType := segments[len(segments)-1]
+			key := [2]string{shortType, task.State}
+			counter[key]++
 		}
 
-		// Export the background tasks metrics
-		backgroundTaskMetrics.Collect(ch)
+		// Set each unique label combination only once
+		for key, count := range counter {
+			backgroundTaskMetrics.WithLabelValues(key[0], key[1]).Set(float64(count))
+		}
 	}
 
 	return 1
