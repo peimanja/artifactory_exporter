@@ -77,8 +77,17 @@ var (
 	}
 )
 
+var backgroundTaskMetrics = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "artifactory_background_tasks",
+		Help: "Number of Artifactory background tasks by type and state.",
+	},
+	[]string{"type", "state"},
+)
+
 func init() {
 	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
+	prometheus.MustRegister(backgroundTaskMetrics)
 }
 
 // Describe describes all the metrics ever exported by the Artifactory exporter. It
@@ -158,7 +167,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	if err := e.exportSystemHALicenses(ch); err != nil {
 		return 0
 	}
-	
+
 	// Fetch Storage Info stats and register them
 	storageInfo, err := e.client.FetchStorageInfo()
 	if err != nil {
@@ -192,6 +201,26 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	// Get Access Federation Validation metric
 	if e.optionalMetrics.AccessFederationValidate {
 		e.exportAccessFederationValidate(ch)
+	}
+
+	// Collect background tasks metrics if enabled
+	if e.optionalMetrics.BackgroundTasks {
+		e.logger.Debug("Collecting background tasks metrics")
+		tasks, err := e.client.FetchBackgroundTasks()
+		if err != nil {
+			e.logger.Error("Error fetching background tasks", "error", err)
+			return 0
+		}
+
+		// Reset the metric to avoid stale data
+		backgroundTaskMetrics.Reset()
+
+		for _, task := range tasks {
+			backgroundTaskMetrics.WithLabelValues(task.Type, task.State).Set(1)
+		}
+
+		// Export the background tasks metrics
+		backgroundTaskMetrics.Collect(ch)
 	}
 
 	return 1
