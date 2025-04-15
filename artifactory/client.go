@@ -65,7 +65,7 @@ func (c *Client) FetchHTTPWithContext(ctx context.Context, endpoint string) (*Ap
 	}
 
 	return &ApiResponse{
-		Body:       body,
+		Body:   body,
 		NodeId: resp.Header.Get("X-Artifactory-Node-Id"),
 	}, nil
 }
@@ -95,7 +95,6 @@ func (c *Client) FetchBackgroundTasks() ([]BackgroundTask, error) {
 	return tasksResponse.Tasks, nil
 }
 
-// BackgroundTask represents a single background task in Artifactory
 type BackgroundTask struct {
 	ID          string `json:"id"`
 	Type        string `json:"type"`
