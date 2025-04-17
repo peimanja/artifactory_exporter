@@ -13,7 +13,6 @@ ARG SOURCE_BRANCH
 ARG BUILD_DATE
 ARG BUILD_USER
 
-
 ARG TARGETPLATFORM
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) go build -a -o /go/bin/artifactory_exporter -ldflags " \

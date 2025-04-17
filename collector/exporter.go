@@ -20,11 +20,22 @@ type Exporter struct {
 	up                                              prometheus.Gauge
 	totalScrapes, totalAPIErrors, jsonParseFailures prometheus.Counter
 	logger                                          *slog.Logger
+	backgroundTaskMetrics *prometheus.GaugeVec
 }
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(conf *config.Config) (*Exporter, error) {
 	client := artifactory.NewClient(conf)
+
+	backgroundTaskMetrics := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "artifactory_background_tasks",
+			Help:      "Number of Artifactory background tasks by type and state",
+		},
+		[]string{"type", "state"},
+	)
+
 	return &Exporter{
 		client:          client,
 		optionalMetrics: conf.OptionalMetrics,
@@ -48,6 +59,7 @@ func NewExporter(conf *config.Config) (*Exporter, error) {
 			Name:      "exporter_json_parse_failures",
 			Help:      "Number of errors while parsing Json.",
 		}),
-		logger: conf.Logger,
+		logger:                  conf.Logger,
+		backgroundTaskMetrics: backgroundTaskMetrics,
 	}, nil
 }
