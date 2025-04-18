@@ -231,6 +231,8 @@ func (e *Exporter) exportStorage(storageInfo artifactory.StorageInfo, ch chan<- 
 			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.UsedSpace, fileStoreType, fileStoreDir, storageInfo.NodeId, ch)
 		case "filestoreFree":
 			e.exportFilestore(metricName, metric, storageInfo.FileStoreSummary.FreeSpace, fileStoreType, fileStoreDir, storageInfo.NodeId, ch)
+		case "items":
+			e.exportCount(metricName, metric, storageInfo.BinariesSummary.ItemsCount, storageInfo.NodeId, ch)
 		}
 	}
 }

@@ -15,7 +15,7 @@ type StorageInfo struct {
 		BinariesSize   string `json:"binariesSize"`
 		ArtifactsSize  string `json:"artifactsSize"`
 		Optimization   string `json:"optimization"`
-		ItemsCount     string `json:""`
+		ItemsCount     string `json:"itemsCount"`
 		ArtifactsCount string `json:"artifactsCount"`
 	} `json:"binariesSummary"`
 	FileStoreSummary struct {
