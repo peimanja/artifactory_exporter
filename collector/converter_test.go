@@ -131,7 +131,7 @@ func TestConvFileStoreData(t *testing.T) {
 		},
 		{
 			// Just to check https://github.com/peimanja/artifactory_exporter/issues/165
-			input: `1427.32 GB (18.2%)`,
+			input: `1,427.32 GB (18.2%)`,
 			want:  []float64{1532573180231.68, 0.1820},
 		},
 	}
