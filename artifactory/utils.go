@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 )
 
 const (
@@ -120,6 +121,59 @@ func (c *Client) handleResponse(resp *http.Response, fullPath string) (*ApiRespo
 	return response, nil
 }
 
+func (c *Client) makeCachedRequest(method string, path string, body []byte, headers **map[string]string) (*ApiResponse, error) {
+	key := fmt.Sprintf("%s_%s_%s", method, path, body)
+	cached := NewCached(key, c.responseCache, c.logger)
+
+	var wg sync.WaitGroup
+	wg.Add(2) // wait for sender and receiver goroutines
+	defer wg.Done()
+	go func() {
+		wg.Wait()
+		cached.Close()
+	}()
+
+	go func() {
+		defer wg.Done()
+		resp, err := c.makeRequest(method, path, body, headers)
+		if err != nil {
+			c.logger.Error(
+				logMsgErrAPICall,
+				"endpoint", path,
+				"err", err.Error(),
+			)
+			cached.errors <- err
+			return
+		}
+		defer resp.Body.Close()
+		apiResp, err := c.handleResponse(resp, path)
+		if err != nil {
+			cached.errors <- err
+			return
+		}
+		cached.responses <- apiResp
+		cached.CacheResponse(apiResp)
+	}()
+
+	select {
+	case err := <-cached.errors:
+		c.logger.Warn(
+			"Error while making request, fallback to cache",
+			"method", method,
+			"path", path,
+			"err", err.Error(),
+		)
+		resp, exists := cached.GetCachedResponse()
+		if exists {
+			return resp, nil
+		} else {
+			return nil, err
+		}
+	case resp := <-cached.responses:
+		return resp, nil
+	}
+}
+
 // FetchHTTP is a wrapper function for making all Get API calls
 func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 	fullPath := fmt.Sprintf("%s/api/%s", c.URI, path)
@@ -127,17 +181,7 @@ func (c *Client) FetchHTTP(path string) (*ApiResponse, error) {
 		"Fetching http",
 		"path", fullPath,
 	)
-	resp, err := c.makeRequest("GET", fullPath, nil, nil)
-	if err != nil {
-		c.logger.Error(
-			logMsgErrAPICall,
-			"endpoint", fullPath,
-			"err", err.Error(),
-		)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	return c.handleResponse(resp, fullPath)
+	return c.makeCachedRequest("GET", fullPath, nil, nil)
 }
 
 // QueryAQL is a wrapper function for making an query to AQL endpoint
@@ -147,17 +191,7 @@ func (c *Client) QueryAQL(query []byte) (*ApiResponse, error) {
 		"Running AQL query",
 		"path", fullPath,
 	)
-	resp, err := c.makeRequest("POST", fullPath, query, nil)
-	if err != nil {
-		c.logger.Error(
-			logMsgErrAPICall,
-			"endpoint", fullPath,
-			"err", err.Error(),
-		)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	return c.handleResponse(resp, fullPath)
+	return c.makeCachedRequest("POST", fullPath, query, nil)
 }
 
 // PostHTTP is a wrapper function for making all Post API calls
@@ -169,15 +203,5 @@ func (c *Client) PostHTTP(path string, body []byte, headers *map[string]string) 
 		"Posting http",
 		"path", fullPath,
 	)
-	resp, err := c.makeRequest("POST", fullPath, body, &headers)
-	if err != nil {
-		c.logger.Error(
-			logMsgErrAPICall,
-			"endpoint", fullPath,
-			"err", err.Error(),
-		)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	return c.handleResponse(resp, fullPath)
+	return c.makeCachedRequest("POST", fullPath, body, &headers)
 }

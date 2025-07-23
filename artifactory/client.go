@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/peimanja/artifactory_exporter/config"
 )
@@ -21,6 +22,7 @@ type Client struct {
 	accessFederationTarget string
 	client                 *http.Client
 	logger                 *slog.Logger
+	responseCache          *ResponseCache
 }
 
 // NewClient returns an initialized Artifactory HTTP Client.
@@ -30,6 +32,17 @@ func NewClient(conf *config.Config) *Client {
 		Timeout:   conf.ArtiTimeout,
 		Transport: tr,
 	}
+	responseCache := NewResponseCache(conf.UseCache, conf.CacheTTL, conf.CacheTimeout)
+	logger := conf.Logger
+	if responseCache != nil {
+		go func() {
+			for {
+				time.Sleep(300 * time.Second)
+				n := responseCache.Prune()
+				logger.Debug("Pruned ResponseCache", "removed_items", n)
+			}
+		}()
+	}
 	return &Client{
 		URI:                    conf.ArtiScrapeURI,
 		authMethod:             conf.Credentials.AuthMethod,
@@ -37,7 +50,8 @@ func NewClient(conf *config.Config) *Client {
 		OptionalMetrics:        conf.OptionalMetrics,
 		accessFederationTarget: conf.AccessFederationTarget,
 		client:                 client,
-		logger:                 conf.Logger,
+		logger:                 logger,
+		responseCache:          responseCache,
 	}
 }
 
