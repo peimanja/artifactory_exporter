@@ -40,7 +40,9 @@ Set the credentials in `env_file_name` and you can deploy this exporter using th
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
 ```
 
-### Docker Compose
+### Caching
+
+#### Docker Compose
 
 Running the exporter against an Artifactory instance with millions of artifacts will cause performance issues in case Prometheus will scrape too often.
 
@@ -51,6 +53,12 @@ Set the credentials in an environment file as described in the *Docker* section 
 ```bash
 docker-compose up -d
 ```
+
+#### Artifactory API response cache
+
+On large artifactory clusters, the response times for certain API calls can be very long, which can lead to timeouts when scraping metrics.
+To avoid this, you can enable caching of API responses by setting the `--use-cache` flag. This will cache successful API responses for a specified time (`--cache-ttl`) and use them for subsequent requests that exceed the specified timeout (`--cache-timeout`).
+
 
 ## Install with Helm
 
@@ -129,6 +137,11 @@ Flags:
                                 URI on which to scrape JFrog Artifactory.
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
+      --access-federation-target=ACCESS-FEDERATION-TARGET
+                                URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled
+      --use-cache               Use cache for API responses to circumvent timeouts
+      --cache-timeout=30s       Timeout for API responses to fallback to cache
+      --cache-ttl=5m            Time to live for cached API responses
       --optional-metric=metric-name ...
                                 optional metric to be enabled. Valid metrics are: [artifacts replication_status federation_status open_metrics access_federation_validate background_tasks]. Pass multiple times to enable multiple optional metrics.
       --log.level=info          Only log messages with the given severity or above. One of: [debug, info, warn, error]
@@ -137,18 +150,21 @@ Flags:
 ```
 
 | Flag / Environment Variable                    | Required | Default                             | Description                                                                             |
-| ---------------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| `web.listen-address`<br/>`WEB_LISTEN_ADDR`     | No       | `:9531`                             | Address to listen on for web interface and telemetry.                                   |
-| `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH`  | No       | `/metrics`                          | Path under which to expose metrics.                                                     |
-| `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No       | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory.                                               |
-| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No       | `true`                              | Flag that enables SSL certificate verification for the scrape URI.                      |
-| `artifactory.timeout`<br/>`ARTI_TIMEOUT`       | No       | `5s`                                | Timeout for trying to get stats from JFrog Artifactory.                                 |
-| `optional-metric`                              | No       |                                     | optional metric to be enabled. Pass multiple times to enable multiple optional metrics. |
-| `log.level`                                    | No       | `info`                              | Only log messages with the given severity or above. One of: [debug, info, warn, error]. |
-| `log.format`                                   | No       | `logfmt`                            | Output format of log messages. One of: [logfmt, json].                                  |
-| `ARTI_USERNAME`                                | *No      |                                     | User to access Artifactory                                                              |
-| `ARTI_PASSWORD`                                | *No      |                                     | Password of the user accessing the Artifactory                                          |
-| `ARTI_ACCESS_TOKEN`                            | *No      |                                     | Access token for accessing the Artifactory                                              |
+| ---------------------------------------------- | -------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `web.listen-address`<br/>`WEB_LISTEN_ADDR`     | No       | `:9531`                             | Address to listen on for web interface and telemetry.                                                                                                                                 |
+| `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH`  | No       | `/metrics`                          | Path under which to expose metrics.                                                                                                                                                   |
+| `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No       | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory.                                                                                                                                             |
+| `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No       | `true`                              | Flag that enables SSL certificate verification for the scrape URI.                                                                                                                    |
+| `artifactory.timeout`<br/>`ARTI_TIMEOUT`       | No       | `5s`                                | Timeout for trying to get stats from JFrog Artifactory.                                                                                                                               |
+| `use-cache`<br/>`USE_CACHE`                    | No       | `false`                             | Use caching for API responses to circumvent timeouts.                                                                                                                                 |
+| `cache-timeout`<br/>`CACHE_TIMEOUT`            | No       | `30s`                               | Timeout for API responses before falling back to cache. Requires enabling `use-cache` to apply this. Should be set to a lower value than `artifactory.timeout` to reap caching benefits. |
+| `cache-ttl`<br/>`CACHE_TTL`                    | No       | `5m`                                | Time to live for cached API responses. Requires enabling `use-cache` to apply this.                                                                                              |
+| `optional-metric`                              | No       |                                     | optional metric to be enabled. Pass multiple times to enable multiple optional metrics.                                                                                               |
+| `log.level`                                    | No       | `info`                              | Only log messages with the given severity or above. One of: [debug, info, warn, error].                                                                                               |
+| `log.format`                                   | No       | `logfmt`                            | Output format of log messages. One of: [logfmt, json].                                                                                                                                |
+| `ARTI_USERNAME`                                | *No      |                                     | User to access Artifactory                                                                                                                                                            |
+| `ARTI_PASSWORD`                                | *No      |                                     | Password of the user accessing the Artifactory                                                                                                                                        |
+| `ARTI_ACCESS_TOKEN`                            | *No      |                                     | Access token for accessing the Artifactory                                                                                                                                            |
 
 * Either `ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variables has to be set.
 
