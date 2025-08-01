@@ -3,6 +3,7 @@ package collector
 import (
 	"strconv"
 
+	"github.com/peimanja/artifactory_exporter/artifactory"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -85,6 +86,14 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 func (e *Exporter) exportSystemHALicenses(ch chan<- prometheus.Metric) error {
 	licensesInfo, err := e.client.FetchLicenses()
 	if err != nil {
+		// Check if this is a 404 error (endpoint not found) - common for Edge nodes
+		if apiError, ok := err.(*artifactory.APIError); ok && apiError.Status() == 404 {
+			e.logger.Debug(
+				"HA licenses endpoint not available - likely an Edge node",
+				"endpoint", "/system/licenses",
+			)
+			return nil // Don't treat this as an error for Edge nodes
+		}
 		e.logger.Error(
 			"Couldn't scrape Artifactory when fetching system/licenses",
 			"err", err.Error(),
