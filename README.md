@@ -40,7 +40,9 @@ Set the credentials in `env_file_name` and you can deploy this exporter using th
 $ docker run --env-file=env_file_name -p 9531:9531 peimanja/artifactory_exporter:latest <flags>
 ```
 
-### Docker Compose
+### Caching
+
+#### Docker Compose
 
 Running the exporter against an Artifactory instance with millions of artifacts will cause performance issues in case Prometheus will scrape too often.
 
@@ -51,6 +53,12 @@ Set the credentials in an environment file as described in the *Docker* section 
 ```bash
 docker-compose up -d
 ```
+
+#### Artifactory API response cache
+
+On large artifactory clusters, the response times for certain API calls can be very long, which can lead to timeouts when scraping metrics.
+To avoid this, you can enable caching of API responses by setting the `--use-cache` flag. This will cache successful API responses for a specified time (`--cache-ttl`) and use them for subsequent requests that exceed the specified timeout (`--cache-timeout`).
+
 
 ## Install with Helm
 
