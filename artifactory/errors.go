@@ -32,3 +32,8 @@ func (e *APIError) apiEndpoint() string {
 func (e *APIError) apiStatus() int {
 	return e.status
 }
+
+// Status returns the HTTP status code of the API error
+func (e *APIError) Status() int {
+	return e.status
+}
