@@ -23,6 +23,9 @@ var (
 	artiTimeout            = kingpin.Flag("artifactory.timeout", "Timeout for trying to get stats from JFrog Artifactory.").Envar("ARTI_TIMEOUT").Default("5s").Duration()
 	optionalMetrics        = kingpin.Flag("optional-metric", fmt.Sprintf("optional metric to be enabled. Valid metrics are: %v", optionalMetricsList)).PlaceHolder("metric-name").Strings()
 	accessFederationTarget = kingpin.Flag("access-federation-target", "URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled").Envar("ACCESS_FEDERATION_TARGET").String()
+	useCache               = kingpin.Flag("use-cache", "Use cache for API responses to circumvent timeouts").Envar("USE_CACHE").Default("false").Bool()
+	cacheTimeout           = kingpin.Flag("cache-timeout", "Timeout for API responses to fallback to cache").Envar("CACHE_TIMEOUT").Default("30s").Duration()
+	cacheTTL               = kingpin.Flag("cache-ttl", "Time to live for cached API responses").Envar("CACHE_TTL").Default("5m").Duration()
 )
 
 var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate", "background_tasks"}
@@ -54,6 +57,9 @@ type Config struct {
 	Credentials            *Credentials
 	ArtiSSLVerify          bool
 	ArtiTimeout            time.Duration
+	UseCache               bool
+	CacheTimeout           time.Duration
+	CacheTTL               time.Duration
 	OptionalMetrics        OptionalMetrics
 	AccessFederationTarget string
 	Logger                 *slog.Logger
@@ -126,6 +132,9 @@ func NewConfig() (*Config, error) {
 		Credentials:            &credentials,
 		ArtiSSLVerify:          *artiSSLVerify,
 		ArtiTimeout:            *artiTimeout,
+		UseCache:               *useCache,
+		CacheTimeout:           *cacheTimeout,
+		CacheTTL:               *cacheTTL,
 		OptionalMetrics:        optMetrics,
 		AccessFederationTarget: *accessFederationTarget,
 		Logger:                 logger,
