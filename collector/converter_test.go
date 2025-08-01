@@ -129,6 +129,11 @@ func TestConvFileStoreData(t *testing.T) {
 			input: `1.0 GB (1.0%)`,
 			want:  []float64{1073741824.000000, 0.0100},
 		},
+		{
+			// Just to check https://github.com/peimanja/artifactory_exporter/issues/165
+			input: `1,427.32 GB (18.2%)`,
+			want:  []float64{1532573180231.68, 0.1820},
+		},
 	}
 	for _, tc := range tests {
 		gotSize, gotPercent, err := fakeExporter.convArtiToPromFileStoreData(tc.input)
