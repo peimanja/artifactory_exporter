@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"log/slog"
 	"math"
 	"regexp"
 	"testing"
@@ -14,11 +15,16 @@ func almostEqual(a, b float64) bool {
 	return math.Abs(a-b) <= float64EqualityThreshold
 }
 
-var testExporter = &Exporter{
-	logger: l.New(l.Config{
+// newTestLogger creates a logger instance for testing
+func newTestLogger() *slog.Logger {
+	return l.New(l.Config{
 		Format: l.FormatDefault,
 		Level:  "debug",
-	}),
+	})
+}
+
+var testExporter = &Exporter{
+	logger: newTestLogger(),
 }
 
 func TestConvMultiplier(t *testing.T) {
@@ -278,11 +284,11 @@ func TestConvArtiToPromNumber(t *testing.T) {
 
 func TestConvArtiToPromFileStoreData(t *testing.T) {
 	tests := []struct {
-		name           string
-		input          string
-		expectedSize   float64
-		expectedUsage  float64
-		expectError    bool
+		name          string
+		input         string
+		expectedSize  float64
+		expectedUsage float64
+		expectError   bool
 	}{
 		{"TB with percentage", "3.33 TB (3.3%)", 3661373720494.080078, 0.033, false},
 		{"TB with higher percentage", "6.66 TB (6.66%)", 7322747440988.160156, 0.0666, false},
@@ -372,7 +378,7 @@ func TestConvArtiToPromFileStoreData_EdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Valid edge case 0%", 
+			name:        "Valid edge case 0%",
 			input:       "100 GB (0%)",
 			expectError: false,
 		},

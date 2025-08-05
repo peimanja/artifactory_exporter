@@ -73,12 +73,17 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 }
 
 const (
+	// Sub-patterns for readability and maintainability
+	pattSize  = `[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?`
+	pattUnit  = `[KMGT]B`
+	pattUsage = `(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%`
+
 	// pattFileStoreData matches file store data format like "1.5 TB (75.2%)"
 	// Pattern breakdown:
-	// - size: [[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)? - matches numbers with optional commas and decimals
-	// - [KMGT]B - matches unit (KB, MB, GB, TB)
-	// - usage: (?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?% - matches 0-100% with optional decimals
-	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) [KMGT]B \((?P<usage>(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%)\)$`
+	// - size: matches numbers with optional commas and decimals
+	// - unit: matches KB, MB, GB, TB
+	// - usage: matches 0-100% with optional decimals
+	pattFileStoreData = `^(?P<size>` + pattSize + `) ` + pattUnit + ` \((?P<usage>` + pattUsage + `)\)$`
 )
 
 var (
@@ -100,7 +105,7 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 		b, err := e.convArtiToPromNumber(artiSize)
 		if err != nil {
 			return 0, 0, fmt.Errorf(
-				"The string '%s' not recognisable as known artifactory filestore size: %w",
+				"the string '%s' not recognisable as known artifactory filestore size: %w",
 				artiSize,
 				err,
 			)
@@ -117,47 +122,41 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 			logDbgKeyArtNum, artiSize,
 		)
 		err := fmt.Errorf(
-			`The string '%s' does not match '%s' pattern.`,
+			"the string '%s' does not match '%s' pattern",
 			artiSize,
 			pattFileStoreData,
 		)
 		return 0, 0, err
 	}
+
 	groups := extractNamedGroups(artiSize, reFileStoreData)
 
-	// Extract the unit from the original string
+	// Extract size and usage using regex groups instead of manual parsing
 	sizeStr := groups["size"]
-	
-	// Find the unit (TB, GB, etc.) by looking at what comes after the size in the original string
+	usageStr := groups["usage"]
+
+	// Extract unit by finding what comes between size and opening parenthesis
+	// This is more reliable than manual string manipulation
 	sizeIdx := strings.Index(artiSize, sizeStr)
 	if sizeIdx == -1 {
 		return 0, 0, fmt.Errorf("size string '%s' not found in input '%s'", sizeStr, artiSize)
 	}
-	
-	spaceIdx := sizeIdx + len(sizeStr)
-	if spaceIdx >= len(artiSize) || artiSize[spaceIdx] != ' ' {
-		return 0, 0, fmt.Errorf("expected space after size string '%s' in input '%s'", sizeStr, artiSize)
+
+	parenIdx := strings.Index(artiSize, "(")
+	if parenIdx == -1 {
+		return 0, 0, fmt.Errorf("opening parenthesis not found in input '%s'", artiSize)
 	}
-	
-	unitStart := spaceIdx + 1
-	if unitStart >= len(artiSize) {
-		return 0, 0, fmt.Errorf("no unit found after size string '%s' in input '%s'", sizeStr, artiSize)
-	}
-	
-	unitEnd := strings.Index(artiSize[unitStart:], " ")
-	if unitEnd == -1 {
-		return 0, 0, fmt.Errorf("could not find end of unit after size string '%s' in input '%s'", sizeStr, artiSize)
-	}
-	
-	unit := artiSize[unitStart : unitStart+unitEnd]
+
+	// Extract the unit from between size and parenthesis, trimming spaces
+	unitPart := strings.TrimSpace(artiSize[sizeIdx+len(sizeStr) : parenIdx])
 
 	// Reconstruct the size with unit for proper conversion
-	sizeWithUnit := sizeStr + " " + unit
+	sizeWithUnit := sizeStr + " " + unitPart
 	size, err := e.convArtiToPromNumber(sizeWithUnit)
 	if err != nil {
 		return 0, 0, err
 	}
-	usage, err := e.convArtiToPromNumber(groups["usage"])
+	usage, err := e.convArtiToPromNumber(usageStr)
 	if err != nil {
 		return 0, 0, err
 	}
