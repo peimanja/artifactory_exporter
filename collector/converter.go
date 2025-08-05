@@ -73,7 +73,7 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 }
 
 const (
-	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) [KMGT]B \((?P<usage>[[:digit:]]{1,3}(?:\.[[:digit:]]{1,2})?%)\)$`
+	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) [KMGT]B \((?P<usage>(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%)\)$`
 )
 
 var (
