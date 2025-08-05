@@ -73,7 +73,7 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 }
 
 const (
-	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) ? [KMGT]B \((?P<usage>[[:digit:]]{1,2}(?:\.[[:digit:]]{1,2})?%)\)$`
+	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) [KMGT]B \((?P<usage>[[:digit:]]{1,3}(?:\.[[:digit:]]{1,2})?%)\)$`
 )
 
 var (
@@ -119,7 +119,17 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 		return 0, 0, err
 	}
 	groups := extractNamedGroups(artiSize, reFileStoreData)
-	size, err := e.convArtiToPromNumber(groups["size"])
+
+	// Extract the unit from the original string
+	sizeStr := groups["size"]
+	// Find the unit (TB, GB, etc.) by looking at what comes after the size in the original string
+	unitStart := strings.Index(artiSize, sizeStr) + len(sizeStr) + 1 // +1 for the space
+	unitEnd := strings.Index(artiSize[unitStart:], " ")
+	unit := artiSize[unitStart : unitStart+unitEnd]
+
+	// Reconstruct the size with unit for proper conversion
+	sizeWithUnit := sizeStr + " " + unit
+	size, err := e.convArtiToPromNumber(sizeWithUnit)
 	if err != nil {
 		return 0, 0, err
 	}

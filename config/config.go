@@ -82,7 +82,7 @@ func NewConfig() (*Config, error) {
 	} else if credentials.Username == "" && credentials.Password == "" && credentials.AccessToken != "" {
 		credentials.AuthMethod = "accessToken"
 	} else {
-		return nil, fmt.Errorf("`ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variable hast to be set")
+		return nil, fmt.Errorf("`ARTI_USERNAME` and `ARTI_PASSWORD` or `ARTI_ACCESS_TOKEN` environment variable has to be set")
 	}
 
 	_, err = url.Parse(*artiScrapeURI)

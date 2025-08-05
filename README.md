@@ -27,7 +27,7 @@ Artifactory access tokens may be used via the Authorization header by setting `A
 
 ### Binary
 
-Download the binary for your operation system from [release](https://github.com/peimanja/artifactory_exporter/releases) page and run it:
+Download the binary for your operating system from [release](https://github.com/peimanja/artifactory_exporter/releases) page and run it:
 ```bash
 $ ./artifactory_exporter <flags>
 ```
@@ -138,7 +138,7 @@ Flags:
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
       --access-federation-target=ACCESS-FEDERATION-TARGET
-                                URL of Jfrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled
+                                URL of JFrog Access Federation Target server. Only required if optional metric AccessFederationValidate is enabled
       --use-cache               Use cache for API responses to circumvent timeouts
       --cache-timeout=30s       Timeout for API responses to fallback to cache
       --cache-ttl=5m            Time to live for cached API responses
@@ -192,14 +192,14 @@ Some metrics are not available with Artifactory OSS license. The exporter return
 | artifactory_storage_filestore_free_bytes  | Space free in the file store in bytes.                                    | `storage_dir`, `storage_type`                 | &#9989;     |
 | artifactory_storage_repo_used_bytes       | Space used by an Artifactory repository in bytes.                         | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_storage_repo_folders          | Number of folders in an Artifactory repository.                           | `name`, `package_type`, `type`                | &#9989;     |
-| artifactory_storage_repo_files            | Number files in an Artifactory repository.                                | `name`, `package_type`, `type`                | &#9989;     |
-| artifactory_storage_repo_items            | Number Items in an Artifactory repository.                                | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_storage_repo_files            | Number of files in an Artifactory repository.                             | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_storage_repo_items            | Number of items in an Artifactory repository.                             | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_artifacts_created_1m          | Number of artifacts created in the repo (last 1 minute).                  | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_artifacts_created_5m          | Number of artifacts created in the repo (last 5 minutes).                 | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_artifacts_created_15m         | Number of artifacts created in the repo (last 15 minutes).                | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_artifacts_downloaded_1m       | Number of artifacts downloaded from the repository (last 1 minute).       | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_artifacts_downloaded_5m       | Number of artifacts downloaded from the repository (last 5 minutes).      | `name`, `package_type`, `type`                | &#9989;     |
-| artifactory_artifacts_downloaded_15m      | Number of artifacts downloaded from the repository (last 15 minute).      | `name`, `package_type`, `type`                | &#9989;     |
+| artifactory_artifacts_downloaded_15m      | Number of artifacts downloaded from the repository (last 15 minutes).     | `name`, `package_type`, `type`                | &#9989;     |
 | artifactory_system_healthy                | Is Artifactory working properly (1 = healthy).                            |                                               | &#9989;     |
 | artifactory_system_license                | License type and expiry as labels, seconds to expiration as value         | `type`, `licensed_to`, `expires`              | &#9989;     |
 | artifactory_system_version                | Version and revision of Artifactory as labels.                            | `version`, `revision`                         | &#9989;     |
@@ -226,8 +226,8 @@ Supported optional metrics:
 
 Dashboard can be found [here](https://grafana.com/grafana/dashboards/12113).
 
-![Grafana dDashboard](/grafana/dashboard-screenshot-1.png)
-![Grafana dDashboard](/grafana/dashboard-screenshot-2.png)
+![Grafana Dashboard](/grafana/dashboard-screenshot-1.png)
+![Grafana Dashboard](/grafana/dashboard-screenshot-2.png)
 
 ### Common Issues
 
@@ -247,4 +247,4 @@ In most cases enabling debug logs will help to identify the issue. To enable deb
 
 #### There was an error when trying to unmarshal the API Error
 
-This error is usually means that the exporter is not able to properly reach the Artifactory endpoint. One of the common reasons for this is that the Artifactory URL is not set properly. Make sure your are not missing `/artifactory` at the end of the URL which is how most implementations of Artifactory are configured. (e.g. `http://artifactory.yourdomain.com/artifactory`)
+This error usually indicates that the exporter is not able to properly reach the Artifactory endpoint. One of the common reasons for this is that the Artifactory URL is not set properly. Make sure you are not missing `/artifactory` at the end of the URL which is how most implementations of Artifactory are configured. (e.g. `http://artifactory.yourdomain.com/artifactory`)

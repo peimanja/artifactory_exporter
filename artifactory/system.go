@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -96,16 +97,26 @@ func (l LicenseInfo) ValidSeconds() (int64, error) {
 	if l.IsOSS() {
 		return 0, nil
 	}
-	validThroughTime, err := time.Parse(USAFullDate, l.ValidThrough)
+	// Handle non-numeric day in 'ValidThrough' (e.g., "Jul XX, 2025")
+	valid := l.ValidThrough
+	parts := strings.Split(valid, " ")
+	if len(parts) >= 3 {
+		day := strings.TrimSuffix(parts[1], ",")
+		if _, err := strconv.Atoi(day); err != nil {
+			// Default to first day of the month
+			parts[1] = "1,"
+			valid = strings.Join(parts, " ")
+		}
+	}
+	parsedTime, err := time.Parse(USAFullDate, valid)
 	if err != nil {
 		return 0, fmt.Errorf(
 			"unparsable ‘validThrough’ license field: %w",
 			err,
 		)
 	}
-	validThroughEpoch := validThroughTime.Unix()
-	timeNowEpoch := time.Now().Unix()
-	return validThroughEpoch - timeNowEpoch, nil
+	// Calculate seconds until expiration
+	return parsedTime.Unix() - time.Now().Unix(), nil
 }
 
 // FetchLicense makes the API call to license endpoint and returns LicenseInfo
@@ -131,10 +142,10 @@ func (c *Client) FetchLicense() (LicenseInfo, error) {
 type LicensesInfo struct {
 	Licenses []struct {
 		LicenseInfo
-		NodeId       string `json:"nodeId"`
-		NodeUrl      string `json:"nodeUrl"`
-		LicenseHash  string `json:"licenseHash"`
-		Expired      bool   `json:"expired"`
+		NodeId      string `json:"nodeId"`
+		NodeUrl     string `json:"nodeUrl"`
+		LicenseHash string `json:"licenseHash"`
+		Expired     bool   `json:"expired"`
 	} `json:"licenses"`
 }
 

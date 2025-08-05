@@ -34,7 +34,14 @@ func New(c Config) *slog.Logger {
 
 func fmtFromConfig(c Config) string {
 	if c.Format != "" {
-		return c.Format
+		// Validate format and return default if invalid
+		for _, validFormat := range FormatsAvailable {
+			if c.Format == validFormat {
+				return c.Format
+			}
+		}
+		// Return default for invalid formats
+		return FormatDefault
 	}
 	return FormatDefault
 }

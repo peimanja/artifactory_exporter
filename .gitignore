@@ -1,6 +1,7 @@
 /.build
 /.release
 /.tarballs
+/.vscode
 /artifactory_exporter
 *.tar.gz
 *.test
