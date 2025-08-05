@@ -221,7 +221,7 @@ func (e *Exporter) collectBackgroundTasks() {
 
 	tasks, err := e.client.FetchBackgroundTasks()
 	if err != nil {
-		e.logger.Error("Error fetching background tasks", "error", err)
+		e.logger.Error("Error fetching background tasks", "err", err)
 		return
 	}
 
