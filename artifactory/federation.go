@@ -71,7 +71,7 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	var mirrorLagsData []MirrorLag
 	err = json.Unmarshal(resp.Body, &mirrorLagsData)
 	if err != nil {
-		c.logger.Error("There was an issue when trying to unmarshal mirror lags response: ", err)
+		c.logger.Error("There was an issue when trying to unmarshal mirror lags response", "error", err)
 		return mirrorLags, err
 	}
 	mirrorLags.MirrorLags = mirrorLagsData
@@ -104,7 +104,7 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 
 	err = json.Unmarshal(resp.Body, &unavailableMirrors)
 	if err != nil {
-		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response: ", err)
+		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response", "error", err)
 		return unavailableMirrors, err
 	}
 

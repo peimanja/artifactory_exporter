@@ -32,7 +32,7 @@ jobs:
     - uses: wangyoucao577/go-release-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        goversion: 1.21
+        goversion: 1.23
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
         release_tag: ${{ github.event.release.tag_name || github.event.inputs.tag }}

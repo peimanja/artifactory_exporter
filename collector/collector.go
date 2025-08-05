@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/version"
 )
 
 const (
@@ -85,10 +84,6 @@ var (
 		"accessFederationValid": newMetric("access_federation_valid", "access", "Is JFrog Access Federation valid (1 = Circle of Trust validated)", defaultLabelNames),
 	}
 )
-
-func init() {
-	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
-}
 
 // Describe sends the descriptors of all metrics exported by the Artifactory exporter.
 // Note: Metrics manually collected via Collect (like background task metrics)
