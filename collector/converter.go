@@ -73,6 +73,11 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 }
 
 const (
+	// pattFileStoreData matches file store data format like "1.5 TB (75.2%)"
+	// Pattern breakdown:
+	// - size: [[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)? - matches numbers with optional commas and decimals
+	// - [KMGT]B - matches unit (KB, MB, GB, TB)
+	// - usage: (?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?% - matches 0-100% with optional decimals
 	pattFileStoreData = `^(?P<size>[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?) [KMGT]B \((?P<usage>(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%)\)$`
 )
 
@@ -122,9 +127,28 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 
 	// Extract the unit from the original string
 	sizeStr := groups["size"]
+	
 	// Find the unit (TB, GB, etc.) by looking at what comes after the size in the original string
-	unitStart := strings.Index(artiSize, sizeStr) + len(sizeStr) + 1 // +1 for the space
+	sizeIdx := strings.Index(artiSize, sizeStr)
+	if sizeIdx == -1 {
+		return 0, 0, fmt.Errorf("size string '%s' not found in input '%s'", sizeStr, artiSize)
+	}
+	
+	spaceIdx := sizeIdx + len(sizeStr)
+	if spaceIdx >= len(artiSize) || artiSize[spaceIdx] != ' ' {
+		return 0, 0, fmt.Errorf("expected space after size string '%s' in input '%s'", sizeStr, artiSize)
+	}
+	
+	unitStart := spaceIdx + 1
+	if unitStart >= len(artiSize) {
+		return 0, 0, fmt.Errorf("no unit found after size string '%s' in input '%s'", sizeStr, artiSize)
+	}
+	
 	unitEnd := strings.Index(artiSize[unitStart:], " ")
+	if unitEnd == -1 {
+		return 0, 0, fmt.Errorf("could not find end of unit after size string '%s' in input '%s'", sizeStr, artiSize)
+	}
+	
 	unit := artiSize[unitStart : unitStart+unitEnd]
 
 	// Reconstruct the size with unit for proper conversion

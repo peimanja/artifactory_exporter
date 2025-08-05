@@ -328,3 +328,78 @@ func TestConvArtiToPromFileStoreData(t *testing.T) {
 		})
 	}
 }
+
+func TestConvArtiToPromFileStoreData_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Malformed input missing space after size",
+			input:       "100GB(50%)", // Missing space before unit
+			expectError: true,
+			errorMsg:    "does not match",
+		},
+		{
+			name:        "Empty size in matched regex",
+			input:       " TB (50%)", // Empty size part
+			expectError: true,
+			errorMsg:    "does not match",
+		},
+		{
+			name:        "Invalid percentage over 100",
+			input:       "100 GB (150%)", // Over 100%
+			expectError: true,
+			errorMsg:    "does not match",
+		},
+		{
+			name:        "Invalid percentage format",
+			input:       "100 GB (abc%)", // Non-numeric percentage
+			expectError: true,
+			errorMsg:    "does not match",
+		},
+		{
+			name:        "Missing closing parenthesis",
+			input:       "100 GB (50%", // Missing closing paren
+			expectError: true,
+			errorMsg:    "does not match",
+		},
+		{
+			name:        "Valid edge case 100%",
+			input:       "100 GB (100%)",
+			expectError: false,
+		},
+		{
+			name:        "Valid edge case 0%", 
+			input:       "100 GB (0%)",
+			expectError: false,
+		},
+		{
+			name:        "Valid edge case with decimals",
+			input:       "100 GB (99.99%)",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := testExporter.convArtiToPromFileStoreData(tt.input)
+
+			if tt.expectError && err == nil {
+				t.Errorf("Expected error for input '%s', but got none", tt.input)
+			}
+
+			if !tt.expectError && err != nil {
+				t.Errorf("Expected no error for input '%s', but got: %v", tt.input, err)
+			}
+
+			if tt.expectError && err != nil && tt.errorMsg != "" {
+				if !regexp.MustCompile(tt.errorMsg).MatchString(err.Error()) {
+					t.Errorf("Expected error message to contain '%s', but got: %v", tt.errorMsg, err.Error())
+				}
+			}
+		})
+	}
+}
