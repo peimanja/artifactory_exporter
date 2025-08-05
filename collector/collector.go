@@ -76,9 +76,6 @@ var (
 		"unavailableMirror": newMetric("unavailable_mirror", "federation", "Unsynchronized federated mirror status", append([]string{"status"}, federationLabelNames...)),
 	}
 
-	openMetrics = metrics{
-		"openMetrics": newMetric("open_metrics", "openmetrics", "OpenMetrics proxied from JFrog Platform", defaultLabelNames),
-	}
 
 	accessMetrics = metrics{
 		"accessFederationValid": newMetric("access_federation_valid", "access", "Is JFrog Access Federation valid (1 = Circle of Trust validated)", defaultLabelNames),
@@ -111,11 +108,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 			ch <- m
 		}
 	}
-	if e.optionalMetrics.OpenMetrics {
-		for _, m := range openMetrics {
-			ch <- m
-		}
-	}
+
 	if e.optionalMetrics.AccessFederationValidate {
 		for _, m := range accessMetrics {
 			ch <- m
