@@ -32,9 +32,20 @@ func New(c Config) *slog.Logger {
 	return newTXTLogger(lvl)
 }
 
+// formatsAvailableMap provides O(1) lookup for format validation
+var formatsAvailableMap = map[string]bool{
+	FormatDefault: true,
+	fmtJSON:       true,
+}
+
 func fmtFromConfig(c Config) string {
 	if c.Format != "" {
-		return c.Format
+		// Validate format using map lookup for better performance
+		if formatsAvailableMap[c.Format] {
+			return c.Format
+		}
+		// Return default for invalid formats
+		return FormatDefault
 	}
 	return FormatDefault
 }

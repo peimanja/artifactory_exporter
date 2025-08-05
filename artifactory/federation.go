@@ -60,7 +60,7 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 		if errors.As(err, &apiErr) && apiErr.status == 404 {
 			return mirrorLags, nil
 		} else if errors.As(err, &urlErr) {
-			c.logger.Error("URL error while fetching mirror lags: ", urlErr)
+			c.logger.Error("URL error while fetching mirror lags", "err", urlErr)
 			return mirrorLags, err
 		} else {
 			return mirrorLags, err
@@ -71,7 +71,7 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	var mirrorLagsData []MirrorLag
 	err = json.Unmarshal(resp.Body, &mirrorLagsData)
 	if err != nil {
-		c.logger.Error("There was an issue when trying to unmarshal mirror lags response: ", err)
+		c.logger.Error("There was an issue when trying to unmarshal mirror lags response", "err", err)
 		return mirrorLags, err
 	}
 	mirrorLags.MirrorLags = mirrorLagsData
@@ -94,7 +94,7 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 		if errors.As(err, &apiErr) && apiErr.status == 404 {
 			return unavailableMirrors, nil
 		} else if errors.As(err, &urlErr) {
-			c.logger.Error("URL error while fetching unavailable mirrors: ", urlErr)
+			c.logger.Error("URL error while fetching unavailable mirrors", "err", urlErr)
 			return unavailableMirrors, err
 		} else {
 			return unavailableMirrors, err
@@ -104,7 +104,7 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 
 	err = json.Unmarshal(resp.Body, &unavailableMirrors)
 	if err != nil {
-		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response: ", err)
+		c.logger.Error("There was an issue when trying to unmarshal unavailable mirrors response", "err", err)
 		return unavailableMirrors, err
 	}
 

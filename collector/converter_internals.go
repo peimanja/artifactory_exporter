@@ -25,7 +25,7 @@ func (e *Exporter) convMultiplier(m string) (float64, error) {
 		"The string was not recognized as a known multiplier.",
 		"artifactory.number.multiplier", m,
 	)
-	return 0, fmt.Errorf(`Could not recognise '%s' as multiplier`, m)
+	return 0, fmt.Errorf(`could not recognise '%s' as multiplier`, m)
 }
 
 func (e *Exporter) convNumber(n string) (float64, error) {
@@ -45,6 +45,12 @@ type reCaptureGroups map[string]string
 func extractNamedGroups(artiNum string, re *regexp.Regexp) reCaptureGroups {
 	match := re.FindStringSubmatch(artiNum)
 	groupsFound := make(reCaptureGroups)
+
+	// Return empty map if no match found
+	if match == nil {
+		return groupsFound
+	}
+
 	for i, name := range re.SubexpNames() {
 		groupCaptured := match[i]
 		if i != 0 && name != `` && groupCaptured != `` {

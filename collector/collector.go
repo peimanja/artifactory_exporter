@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/version"
 )
 
 const (
@@ -51,8 +50,8 @@ var (
 		"items":          newMetric("items", "storage", "Total items count stored in Artifactory.", defaultLabelNames),
 		"repoUsed":       newMetric("repo_used_bytes", "storage", "Used space by an Artifactory repository in bytes.", repoLabelNames),
 		"repoFolders":    newMetric("repo_folders", "storage", "Number of folders in an Artifactory repository.", repoLabelNames),
-		"repoFiles":      newMetric("repo_files", "storage", "Number files in an Artifactory repository.", repoLabelNames),
-		"repoItems":      newMetric("repo_items", "storage", "Number Items in an Artifactory repository.", repoLabelNames),
+		"repoFiles":      newMetric("repo_files", "storage", "Number of files in an Artifactory repository.", repoLabelNames),
+		"repoItems":      newMetric("repo_items", "storage", "Number of items in an Artifactory repository.", repoLabelNames),
 		"repoPercentage": newMetric("repo_percentage", "storage", "Percentage of space used by an Artifactory repository.", repoLabelNames),
 	}
 
@@ -85,10 +84,6 @@ var (
 		"accessFederationValid": newMetric("access_federation_valid", "access", "Is JFrog Access Federation valid (1 = Circle of Trust validated)", defaultLabelNames),
 	}
 )
-
-func init() {
-	prometheus.MustRegister(version.NewCollector("artifactory_exporter"))
-}
 
 // Describe sends the descriptors of all metrics exported by the Artifactory exporter.
 // Note: Metrics manually collected via Collect (like background task metrics)
@@ -226,7 +221,7 @@ func (e *Exporter) collectBackgroundTasks() {
 
 	tasks, err := e.client.FetchBackgroundTasks()
 	if err != nil {
-		e.logger.Error("Error fetching background tasks", "error", err)
+		e.logger.Error("Error fetching background tasks", "err", err)
 		return
 	}
 
