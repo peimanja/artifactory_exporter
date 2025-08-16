@@ -306,6 +306,8 @@ func TestConvArtiToPromFileStoreData(t *testing.T) {
 		{"Invalid format", "invalid", 0.0, 0.0, true},
 		{"Missing percentage", "invalid GB format", 0.0, 0.0, true},
 		{"Invalid unit", "100 PB (50%)", 0.0, 0.0, true},
+		{"S3 sharding N/A format", "0 bytes (N/A)", 0.0, 0.0, false},
+		{"Larger bytes with N/A", "1024 bytes (N/A)", 1024.0, 0.0, false},
 	}
 
 	for _, tt := range tests {
