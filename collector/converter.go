@@ -75,8 +75,8 @@ func (e *Exporter) convArtiToPromNumber(artiNum string) (float64, error) {
 const (
 	// Sub-patterns for readability and maintainability
 	pattSize  = `[[:digit:]]{1,3}(?:[[:digit:]]|(?:,[[:digit:]]{3})*(?:\.[[:digit:]]{1,2})?)?`
-	pattUnit  = `[KMGT]B`
-	pattUsage = `(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%`
+	pattUnit  = `(?:bytes|[KMGT]B)`
+	pattUsage = `(?:(?:100|[1-9]?[0-9])(?:\.[0-9]{1,2})?%|N/A)`
 
 	// pattFileStoreData matches file store data format like "1.5 TB (75.2%)"
 	// Pattern breakdown:
@@ -101,7 +101,7 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 		logDbgKeyArtNum, artiSize,
 	)
 
-	if !strings.Contains(artiSize, `%`) {
+	if !strings.Contains(artiSize, `(`) {
 		b, err := e.convArtiToPromNumber(artiSize)
 		if err != nil {
 			return 0, 0, fmt.Errorf(
@@ -156,9 +156,16 @@ func (e *Exporter) convArtiToPromFileStoreData(artiSize string) (float64, float6
 	if err != nil {
 		return 0, 0, err
 	}
-	usage, err := e.convArtiToPromNumber(usageStr)
-	if err != nil {
-		return 0, 0, err
+	
+	// Handle N/A usage as 0
+	var usage float64
+	if usageStr == "N/A" {
+		usage = 0
+	} else {
+		usage, err = e.convArtiToPromNumber(usageStr)
+		if err != nil {
+			return 0, 0, err
+		}
 	}
 	return size, usage, nil
 }
