@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -62,14 +63,7 @@ var (
 		"licenses": newMetric("licenses", "system", "License type and expiry as labels, seconds to expiration as value", append([]string{"type", "valid_through", "licensed_to", "node_url", "license_hash", "expires"}, defaultLabelNames...)),
 	}
 
-	artifactsMetrics = metrics{
-		"created1m":     newMetric("created_1m", "artifacts", "Number of artifacts created in the repository in the last 1 minute.", repoLabelNames),
-		"created5m":     newMetric("created_5m", "artifacts", "Number of artifacts created in the repository in the last 5 minutes.", repoLabelNames),
-		"created15m":    newMetric("created_15m", "artifacts", "Number of artifacts created in the repository in the last 15 minutes.", repoLabelNames),
-		"downloaded1m":  newMetric("downloaded_1m", "artifacts", "Number of artifacts downloaded from the repository in the last 1 minute.", repoLabelNames),
-		"downloaded5m":  newMetric("downloaded_5m", "artifacts", "Number of artifacts downloaded from the repository in the last 5 minutes.", repoLabelNames),
-		"downloaded15m": newMetric("downloaded_15m", "artifacts", "Number of artifacts downloaded from the repository in the last 15 minutes.", repoLabelNames),
-	}
+	artifactsMetrics = metrics{}
 
 	federationMetrics = metrics{
 		"mirrorLag":         newMetric("mirror_lag", "federation", "Federation mirror lag in milliseconds.", federationLabelNames),
@@ -84,6 +78,18 @@ var (
 		"accessFederationValid": newMetric("access_federation_valid", "access", "Is JFrog Access Federation valid (1 = Circle of Trust validated)", defaultLabelNames),
 	}
 )
+
+func InitMetrics(e *Exporter) {
+	for _, timeInterval := range e.exporterRuntimeConfig.ArtifactsTimeIntervals {
+		createdMetricName := fmt.Sprintf("created_%s", timeInterval.ShortPeriod)
+		downloadedMetricName := fmt.Sprintf("downloaded_%s", timeInterval.ShortPeriod)
+
+		artifactsMetrics[createdMetricName] = newMetric(createdMetricName, "artifacts", fmt.Sprintf("Number of artifacts created in the repository in the last %d %s.", timeInterval.Duration, timeInterval.Unit), repoLabelNames)
+		e.logger.Debug("Init metric", "metricName", createdMetricName)
+		artifactsMetrics[downloadedMetricName] = newMetric(downloadedMetricName, "artifacts", fmt.Sprintf("Number of artifacts downloaded from the repository in the last %d %s.", timeInterval.Duration, timeInterval.Unit), repoLabelNames)
+		e.logger.Debug("Init metric", "metricName", downloadedMetricName)
+	}
+}
 
 // Describe sends the descriptors of all metrics exported by the Artifactory exporter.
 // Note: Metrics manually collected via Collect (like background task metrics)
@@ -101,22 +107,22 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range systemMetrics {
 		ch <- m
 	}
-	if e.optionalMetrics.Artifacts {
+	if e.exporterRuntimeConfig.OptionalMetrics.Artifacts {
 		for _, m := range artifactsMetrics {
 			ch <- m
 		}
 	}
-	if e.optionalMetrics.FederationStatus {
+	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus {
 		for _, m := range federationMetrics {
 			ch <- m
 		}
 	}
-	if e.optionalMetrics.OpenMetrics {
+	if e.exporterRuntimeConfig.OptionalMetrics.OpenMetrics {
 		for _, m := range openMetrics {
 			ch <- m
 		}
 	}
-	if e.optionalMetrics.AccessFederationValidate {
+	if e.exporterRuntimeConfig.OptionalMetrics.AccessFederationValidate {
 		for _, m := range accessMetrics {
 			ch <- m
 		}
@@ -160,7 +166,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) float64 {
 		return 0
 	}
 
-	if e.optionalMetrics.BackgroundTasks {
+	if e.exporterRuntimeConfig.OptionalMetrics.BackgroundTasks {
 		e.collectBackgroundTasks()
 	}
 
@@ -170,7 +176,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) float64 {
 // runExportSteps performs the main metric collection sequence.
 // Returns false if any required step fails.
 func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
-	if e.optionalMetrics.OpenMetrics {
+	if e.exporterRuntimeConfig.OptionalMetrics.OpenMetrics {
 		if err := e.exportOpenMetrics(ch); err != nil {
 			return false
 		}
@@ -195,7 +201,7 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 	}
 	e.exportRepo(repoSummaryList, ch)
 
-	if e.optionalMetrics.Artifacts {
+	if e.exporterRuntimeConfig.OptionalMetrics.Artifacts {
 		repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
 		if err != nil {
 			return false
@@ -203,12 +209,12 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 		e.exportArtifacts(repoSummaryList, ch)
 	}
 
-	if e.optionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
+	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)
 	}
 
-	if e.optionalMetrics.AccessFederationValidate {
+	if e.exporterRuntimeConfig.OptionalMetrics.AccessFederationValidate {
 		e.exportAccessFederationValidate(ch)
 	}
 

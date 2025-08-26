@@ -84,22 +84,23 @@ func (e *Exporter) exportFilestore(metricName string, metric *prometheus.Desc, s
 	ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, fileStoreType, fileStoreDir, nodeId)
 }
 
+type RepoArtifactsSummary struct {
+	period          string // 30s 1m 15m 2h
+	TotalCreated    float64
+	TotalDownloaded float64
+}
+
 type repoSummary struct {
-	Name               string
-	Type               string
-	FoldersCount       float64
-	FilesCount         float64
-	UsedSpace          float64
-	ItemsCount         float64
-	PackageType        string
-	Percentage         float64
-	TotalCreate1m      float64
-	TotalCreated5m     float64
-	TotalCreated15m    float64
-	TotalDownloaded1m  float64
-	TotalDownloaded5m  float64
-	TotalDownloaded15m float64
-	NodeId             string
+	Name                 string
+	Type                 string
+	FoldersCount         float64
+	FilesCount           float64
+	UsedSpace            float64
+	ItemsCount           float64
+	PackageType          string
+	Percentage           float64
+	RepoArtifactsSummary []RepoArtifactsSummary
+	NodeId               string
 }
 
 func (e *Exporter) extractRepo(storageInfo artifactory.StorageInfo) ([]repoSummary, error) {

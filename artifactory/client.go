@@ -47,7 +47,7 @@ func NewClient(conf *config.Config) *Client {
 		URI:                    conf.ArtiScrapeURI,
 		authMethod:             conf.Credentials.AuthMethod,
 		cred:                   *conf.Credentials,
-		OptionalMetrics:        conf.OptionalMetrics,
+		OptionalMetrics:        conf.ExporterRuntimeConfig.OptionalMetrics,
 		accessFederationTarget: conf.AccessFederationTarget,
 		client:                 client,
 		logger:                 logger,

@@ -15,13 +15,13 @@ import (
 // Mock configuration for testing
 func createTestConfig() *config.Config {
 	return &config.Config{
-		ArtiScrapeURI:   "http://localhost:8081/artifactory",
-		ArtiSSLVerify:   false,
-		ArtiTimeout:     5 * time.Second,
-		UseCache:        false,
-		CacheTTL:        5 * time.Minute,
-		CacheTimeout:    30 * time.Second,
-		OptionalMetrics: config.OptionalMetrics{},
+		ArtiScrapeURI:         "http://localhost:8081/artifactory",
+		ArtiSSLVerify:         false,
+		ArtiTimeout:           5 * time.Second,
+		UseCache:              false,
+		CacheTTL:              5 * time.Minute,
+		CacheTimeout:          30 * time.Second,
+		ExporterRuntimeConfig: &config.ExporterRuntimeConfig{},
 		Credentials: &config.Credentials{
 			AuthMethod: "userPass",
 			Username:   "test",
@@ -322,7 +322,7 @@ func TestClientConfiguration(t *testing.T) {
 
 func TestOptionalMetricsConfiguration(t *testing.T) {
 	conf := createTestConfig()
-	conf.OptionalMetrics = config.OptionalMetrics{
+	conf.ExporterRuntimeConfig.OptionalMetrics = config.OptionalMetrics{
 		Artifacts:                true,
 		ReplicationStatus:        true,
 		FederationStatus:         false,
