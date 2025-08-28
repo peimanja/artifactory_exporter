@@ -115,10 +115,10 @@ func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- promet
 				"repo", repoSummary.Name,
 				"type", repoSummary.Type,
 				"package_type", repoSummary.PackageType,
-				"value", repoArtifactsSummary.TotalCreated,
+				"value", repoArtifactsSummary.TotalDownloaded,
 			)
 			downloadedMetric := artifactsMetrics[downloadedMetricName]
-			ch <- prometheus.MustNewConstMetric(downloadedMetric, prometheus.GaugeValue, repoArtifactsSummary.TotalCreated, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
+			ch <- prometheus.MustNewConstMetric(downloadedMetric, prometheus.GaugeValue, repoArtifactsSummary.TotalDownloaded, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 		}
 	}
 }
