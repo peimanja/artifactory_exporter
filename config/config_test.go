@@ -354,7 +354,6 @@ func TestGetAqlTimeFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			duration, unit := getAqlTimeFormat(tt.duration)
 
-			fmt.Println(duration, tt.expected.duration, unit, tt.expected.unit)
 			if duration != tt.expected.duration || unit != tt.expected.unit {
 				t.Errorf("Parsed duration = %v, want %v; unit = %v, want %v", duration, tt.expected.duration, unit, tt.expected.unit)
 			}
