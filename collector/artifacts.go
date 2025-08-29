@@ -35,7 +35,7 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 			"Query Type is not supported",
 			"query", queryType,
 		)
-		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
+		return artifacts, fmt.Errorf("query Type is not supported: %s", queryType)
 	}
 	resp, err := e.client.QueryAQL([]byte(query))
 	if err != nil {
