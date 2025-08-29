@@ -62,16 +62,16 @@ func (e *Exporter) getTotalArtifacts(r []repoSummary) ([]repoSummary, error) {
 	timeIntervals := e.exporterRuntimeConfig.ArtifactsTimeIntervals
 
 	groupedRepoSummary := make(map[string]*repoSummary, len(repoSummaries))
-	for rep_i, repo := range repoSummaries {
-		repoSummaries[rep_i].RepoArtifactsSummary = make([]RepoArtifactsSummary, len(timeIntervals))
+	for i := range repoSummaries {
+		repoSummaries[i].RepoArtifactsSummary = make([]RepoArtifactsSummary, len(timeIntervals))
 		// Fill the slice directly
-		for interval_i, timeInterval := range timeIntervals {
-			repoSummaries[rep_i].RepoArtifactsSummary[interval_i] = RepoArtifactsSummary{period: timeInterval.ShortPeriod}
+		for j, timeInterval := range timeIntervals {
+			repoSummaries[i].RepoArtifactsSummary[j] = RepoArtifactsSummary{period: timeInterval.ShortPeriod}
 		}
-		groupedRepoSummary[repo.Name] = &repoSummaries[rep_i]
+		groupedRepoSummary[repoSummaries[i].Name] = &repoSummaries[i]
 	}
 
-	for interval_i, timeInterval := range timeIntervals {
+	for intervalIdx, timeInterval := range timeIntervals {
 		created, err := e.findArtifacts(timeInterval.Period, "created")
 		if err != nil {
 			return nil, err
@@ -82,10 +82,14 @@ func (e *Exporter) getTotalArtifacts(r []repoSummary) ([]repoSummary, error) {
 		}
 
 		for _, item := range created.Results {
-			groupedRepoSummary[item.Repo].RepoArtifactsSummary[interval_i].TotalCreated++
+			if repo, exists := groupedRepoSummary[item.Repo]; exists {
+				repo.RepoArtifactsSummary[intervalIdx].TotalCreated++
+			}
 		}
 		for _, item := range downloaded.Results {
-			groupedRepoSummary[item.Repo].RepoArtifactsSummary[interval_i].TotalDownloaded++
+			if repo, exists := groupedRepoSummary[item.Repo]; exists {
+				repo.RepoArtifactsSummary[intervalIdx].TotalDownloaded++
+			}
 		}
 	}
 
