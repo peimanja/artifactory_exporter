@@ -35,7 +35,7 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 			"Query Type is not supported",
 			"query", queryType,
 		)
-		return artifacts, fmt.Errorf("Query Type is not supported: %s", queryType)
+		return artifacts, fmt.Errorf("query Type is not supported: %s", queryType)
 	}
 	resp, err := e.client.QueryAQL([]byte(query))
 	if err != nil {
@@ -57,138 +57,72 @@ func (e *Exporter) findArtifacts(period string, queryType string) (artifactQuery
 }
 
 func (e *Exporter) getTotalArtifacts(r []repoSummary) ([]repoSummary, error) {
-	created1m, err := e.findArtifacts("1minutes", "created")
-	if err != nil {
-		return nil, err
-	}
-	created5m, err := e.findArtifacts("5minutes", "created")
-	if err != nil {
-		return nil, err
-	}
-	created15m, err := e.findArtifacts("15minutes", "created")
-	if err != nil {
-		return nil, err
-	}
-	downloaded1m, err := e.findArtifacts("1minutes", "downloaded")
-	if err != nil {
-		return nil, err
-	}
-	downloaded5m, err := e.findArtifacts("5minutes", "downloaded")
-	if err != nil {
-		return nil, err
-	}
-	downloaded15m, err := e.findArtifacts("15minutes", "downloaded")
-	if err != nil {
-		return nil, err
+	repoSummaries := r
+
+	timeIntervals := e.exporterRuntimeConfig.ArtifactsTimeIntervals
+
+	groupedRepoSummary := make(map[string]*repoSummary, len(repoSummaries))
+	for i := range repoSummaries {
+		repoSummaries[i].RepoArtifactsSummary = make([]RepoArtifactsSummary, len(timeIntervals))
+		// Fill the slice directly
+		for j, timeInterval := range timeIntervals {
+			repoSummaries[i].RepoArtifactsSummary[j] = RepoArtifactsSummary{period: timeInterval.ShortPeriod}
+		}
+		groupedRepoSummary[repoSummaries[i].Name] = &repoSummaries[i]
 	}
 
-	repoSummaries := r
-	for i := range repoSummaries {
-		for _, k := range created1m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalCreate1m++
+	for intervalIdx, timeInterval := range timeIntervals {
+		created, err := e.findArtifacts(timeInterval.Period, "created")
+		if err != nil {
+			return nil, err
+		}
+		downloaded, err := e.findArtifacts(timeInterval.Period, "downloaded")
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range created.Results {
+			if repo, exists := groupedRepoSummary[item.Repo]; exists {
+				repo.RepoArtifactsSummary[intervalIdx].TotalCreated++
 			}
 		}
-		for _, k := range created5m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalCreated5m++
-			}
-		}
-		for _, k := range created15m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalCreated15m++
-			}
-		}
-		for _, k := range downloaded1m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalDownloaded1m++
-			}
-		}
-		for _, k := range downloaded5m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalDownloaded5m++
-			}
-		}
-		for _, k := range downloaded15m.Results {
-			repoSummaries[i].NodeId = created1m.NodeId
-			if repoSummaries[i].Name == k.Repo {
-				repoSummaries[i].TotalDownloaded15m++
+		for _, item := range downloaded.Results {
+			if repo, exists := groupedRepoSummary[item.Repo]; exists {
+				repo.RepoArtifactsSummary[intervalIdx].TotalDownloaded++
 			}
 		}
 	}
+
 	return repoSummaries, nil
 }
 
 func (e *Exporter) exportArtifacts(repoSummaries []repoSummary, ch chan<- prometheus.Metric) {
 	for _, repoSummary := range repoSummaries {
-		for metricName, metric := range artifactsMetrics {
-			switch metricName {
-			case "created1m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalCreate1m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreate1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			case "created5m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalCreated5m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			case "created15m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalCreated15m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalCreated15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			case "downloaded1m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalDownloaded1m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded1m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			case "downloaded5m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalDownloaded5m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded5m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			case "downloaded15m":
-				e.logger.Debug(
-					logDbgMsgRegMetric,
-					"metric", metricName,
-					"repo", repoSummary.Name,
-					"type", repoSummary.Type,
-					"package_type", repoSummary.PackageType,
-					"value", repoSummary.TotalDownloaded15m,
-				)
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, repoSummary.TotalDownloaded15m, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
-			}
+		for _, repoArtifactsSummary := range repoSummary.RepoArtifactsSummary {
+			createdMetricName := fmt.Sprintf("created_%s", repoArtifactsSummary.period)
+			downloadedMetricName := fmt.Sprintf("downloaded_%s", repoArtifactsSummary.period)
+
+			e.logger.Debug(
+				logDbgMsgRegMetric,
+				"metric", createdMetricName,
+				"repo", repoSummary.Name,
+				"type", repoSummary.Type,
+				"package_type", repoSummary.PackageType,
+				"value", repoArtifactsSummary.TotalCreated,
+			)
+			createdMetric := artifactsMetrics[createdMetricName]
+			ch <- prometheus.MustNewConstMetric(createdMetric, prometheus.GaugeValue, repoArtifactsSummary.TotalCreated, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
+
+			e.logger.Debug(
+				logDbgMsgRegMetric,
+				"metric", downloadedMetricName,
+				"repo", repoSummary.Name,
+				"type", repoSummary.Type,
+				"package_type", repoSummary.PackageType,
+				"value", repoArtifactsSummary.TotalDownloaded,
+			)
+			downloadedMetric := artifactsMetrics[downloadedMetricName]
+			ch <- prometheus.MustNewConstMetric(downloadedMetric, prometheus.GaugeValue, repoArtifactsSummary.TotalDownloaded, repoSummary.Name, repoSummary.Type, repoSummary.PackageType, repoSummary.NodeId)
 		}
 	}
 }

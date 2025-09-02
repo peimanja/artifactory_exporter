@@ -330,6 +330,37 @@ func TestTimeoutValidation(t *testing.T) {
 	}
 }
 
+func TestGetAqlTimeFormat(t *testing.T) {
+	type Expected struct {
+		duration int
+		unit     string
+	}
+	tests := []struct {
+		name     string
+		duration time.Duration
+		expected Expected
+	}{
+		{"Valid seconds", 5 * time.Second, Expected{5, "second"}},
+		{"Valid large seconds", 555 * time.Second, Expected{555, "second"}},
+		{"Valid minutes", 5 * time.Minute, Expected{5, "minutes"}},
+		{"Valid large minutes", 555 * time.Minute, Expected{555, "minutes"}},
+		{"Valid days", 5 * 24 * time.Hour, Expected{5, "days"}},
+		{"Valid weeks", 5 * 7 * 24 * time.Hour, Expected{5, "weeks"}},
+		{"Transform minutes to seconds", time.Duration(1.5 * float64(time.Minute)), Expected{90, "second"}},
+		{"Transform hour to minutes", 4 * time.Hour, Expected{240, "minutes"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			duration, unit := getAqlTimeFormat(tt.duration)
+
+			if duration != tt.expected.duration || unit != tt.expected.unit {
+				t.Errorf("Parsed duration = %v, want %v; unit = %v, want %v", duration, tt.expected.duration, unit, tt.expected.unit)
+			}
+		})
+	}
+}
+
 func TestOptionalMetricsList(t *testing.T) {
 	expectedMetrics := []string{
 		"artifacts",

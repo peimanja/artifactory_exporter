@@ -26,6 +26,7 @@ var (
 	useCache               = kingpin.Flag("use-cache", "Use cache for API responses to circumvent timeouts").Envar("USE_CACHE").Default("false").Bool()
 	cacheTimeout           = kingpin.Flag("cache-timeout", "Timeout for API responses to fallback to cache").Envar("CACHE_TIMEOUT").Default("30s").Duration()
 	cacheTTL               = kingpin.Flag("cache-ttl", "Time to live for cached API responses").Envar("CACHE_TTL").Default("5m").Duration()
+	artifactsTimeIntervals = kingpin.Flag("artifacts-time-interval", "Time interval for created and downloaded stats").Default("1m", "5m", "15m").DurationList()
 )
 
 var optionalMetricsList = []string{"artifacts", "replication_status", "federation_status", "open_metrics", "access_federation_validate", "background_tasks"}
@@ -49,6 +50,18 @@ type OptionalMetrics struct {
 	BackgroundTasks          bool `yaml:"background_tasks"`
 }
 
+type timeInterval struct {
+	Duration    int
+	Unit        string
+	Period      string
+	ShortPeriod string
+}
+
+type ExporterRuntimeConfig struct {
+	OptionalMetrics        OptionalMetrics
+	ArtifactsTimeIntervals []timeInterval
+}
+
 // Config represents all configuration options for running the Exporter.
 type Config struct {
 	ListenAddress          string
@@ -60,9 +73,23 @@ type Config struct {
 	UseCache               bool
 	CacheTimeout           time.Duration
 	CacheTTL               time.Duration
-	OptionalMetrics        OptionalMetrics
+	ExporterRuntimeConfig  *ExporterRuntimeConfig
 	AccessFederationTarget string
 	Logger                 *slog.Logger
+}
+
+func getAqlTimeFormat(d time.Duration) (int, string) {
+	totalSeconds := int(d.Seconds())
+	switch {
+	case totalSeconds%(7*24*3600) == 0: // weeks
+		return totalSeconds / (7 * 24 * 3600), "weeks"
+	case totalSeconds%(24*3600) == 0: // days
+		return totalSeconds / (24 * 3600), "days"
+	case totalSeconds%60 == 0: // minutes
+		return totalSeconds / 60, "minutes"
+	default:
+		return totalSeconds, "second"
+	}
 }
 
 // NewConfig Creates Config for Artifactory exporter
@@ -110,13 +137,29 @@ func NewConfig() (*Config, error) {
 		}
 	}
 
+	timeIntervals := make([]timeInterval, len(*artifactsTimeIntervals))
+	for idx, interval := range *artifactsTimeIntervals {
+		duration, unit := getAqlTimeFormat(interval)
+		timeIntervals[idx] = timeInterval{
+			Duration:    duration,
+			Unit:        unit,
+			Period:      fmt.Sprintf("%d%s", duration, unit),
+			ShortPeriod: fmt.Sprintf("%d%s", duration, unit[:1]),
+		}
+	}
+
+	exporterRuntimeConfig := ExporterRuntimeConfig{
+		OptionalMetrics:        optMetrics,
+		ArtifactsTimeIntervals: timeIntervals,
+	}
+
 	if *accessFederationTarget != "" {
 		_, err = url.Parse(*accessFederationTarget)
 		if err != nil {
 			return nil, err
 		}
 	} else if optMetrics.AccessFederationValidate {
-		return nil, fmt.Errorf("JFrog Access Federation target URL must be set if optional metric AccessFederationValidate is enabled.")
+		return nil, fmt.Errorf("JFrog Access Federation target URL must be set if optional metric AccessFederationValidate is enabled")
 	}
 
 	logger := l.New(
@@ -135,7 +178,7 @@ func NewConfig() (*Config, error) {
 		UseCache:               *useCache,
 		CacheTimeout:           *cacheTimeout,
 		CacheTTL:               *cacheTTL,
-		OptionalMetrics:        optMetrics,
+		ExporterRuntimeConfig:  &exporterRuntimeConfig,
 		AccessFederationTarget: *accessFederationTarget,
 		Logger:                 logger,
 	}, nil

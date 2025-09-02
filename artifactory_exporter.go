@@ -32,6 +32,7 @@ func main() {
 		)
 		os.Exit(1)
 	}
+	collector.InitMetrics(exporter)
 	prometheus.MustRegister(exporter)
 	conf.Logger.Info(
 		"Starting artifactory_exporter",
