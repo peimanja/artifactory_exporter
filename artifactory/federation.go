@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -68,6 +69,12 @@ func (c *Client) FetchMirrorLags() (MirrorLags, error) {
 	}
 	mirrorLags.NodeId = resp.NodeId
 
+	// Check if RTFS is enabled, which returns plain text instead of JSON
+	if strings.Contains(string(resp.Body), "RTFS is enabled") {
+		c.logger.Debug("RTFS is enabled, mirror lags endpoint is not available")
+		return mirrorLags, nil
+	}
+
 	var mirrorLagsData []MirrorLag
 	err = json.Unmarshal(resp.Body, &mirrorLagsData)
 	if err != nil {
@@ -101,6 +108,12 @@ func (c *Client) FetchUnavailableMirrors() (UnavailableMirrors, error) {
 		}
 	}
 	unavailableMirrors.NodeId = resp.NodeId
+
+	// Check if RTFS is enabled, which returns plain text instead of JSON
+	if strings.Contains(string(resp.Body), "RTFS is enabled") {
+		c.logger.Debug("RTFS is enabled, unavailable mirrors endpoint is not available")
+		return unavailableMirrors, nil
+	}
 
 	err = json.Unmarshal(resp.Body, &unavailableMirrors)
 	if err != nil {
