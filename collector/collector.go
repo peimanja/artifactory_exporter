@@ -209,6 +209,14 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 		e.exportArtifacts(repoSummaryList, ch)
 	}
 
+	if e.exporterRuntimeConfig.OptionalMetrics.Xray {
+		err = e.exportXrayOpenMetrics(ch)
+		if err != nil {
+			return false
+		}
+
+	}
+
 	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)

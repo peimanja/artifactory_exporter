@@ -23,6 +23,7 @@ type Client struct {
 	client                 *http.Client
 	logger                 *slog.Logger
 	responseCache          *ResponseCache
+	XrayURI                string
 }
 
 // NewClient returns an initialized Artifactory HTTP Client.
@@ -52,6 +53,7 @@ func NewClient(conf *config.Config) *Client {
 		client:                 client,
 		logger:                 logger,
 		responseCache:          responseCache,
+		XrayURI:                conf.XrayScrapeURI,
 	}
 }
 
