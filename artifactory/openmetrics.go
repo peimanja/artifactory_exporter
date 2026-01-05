@@ -29,3 +29,30 @@ func (c *Client) FetchOpenMetrics() (OpenMetrics, error) {
 
 	return openMetrics, nil
 }
+
+// FetchXrayOpenMetrics makes the API call to open metrics endpoint and returns all the open metrics
+func (c *Client) FetchXrayOpenMetrics() (OpenMetrics, error) {
+	var openMetrics OpenMetrics
+	c.logger.Debug("Fetching openMetrics")
+	// Temporarily override the URI to use Xray
+	originalURI := c.URI
+	c.URI = c.XrayURI
+	defer func() { c.URI = originalURI }()
+	resp, err := c.FetchHTTP(openMetricsEndpoint)
+	if err != nil {
+		if err.(*APIError).status == 404 {
+			return openMetrics, nil
+		}
+		return openMetrics, err
+	}
+
+	c.logger.Debug(
+		"OpenMetrics from Xray",
+		"body", string(resp.Body),
+	)
+
+	openMetrics.NodeId = resp.NodeId
+	openMetrics.PromMetrics = string(resp.Body)
+
+	return openMetrics, nil
+}

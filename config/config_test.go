@@ -369,6 +369,7 @@ func TestOptionalMetricsList(t *testing.T) {
 		"open_metrics",
 		"access_federation_validate",
 		"background_tasks",
+		"xray",
 	}
 
 	if len(optionalMetricsList) != len(expectedMetrics) {
