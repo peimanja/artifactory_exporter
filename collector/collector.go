@@ -216,7 +216,6 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 		}
 
 	}
-
 	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)

@@ -136,7 +136,7 @@ Flags:
       --artifactory.scrape-uri="http://localhost:8081/artifactory"
                                 URI on which to scrape JFrog Artifactory.
       --xray.scrape-uri="http://localhost:8081/xray"
-                                URI on which to scrape JFrog Artifactory.
+                                URI on which to scrape JFrog Xray.
       --artifactory.ssl-verify  Flag that enables SSL certificate verification for the scrape URI
       --artifactory.timeout=5s  Timeout for trying to get stats from JFrog Artifactory.
       --access-federation-target=ACCESS-FEDERATION-TARGET
@@ -158,7 +158,7 @@ Flags:
 | `web.listen-address`<br/>`WEB_LISTEN_ADDR`     | No       | `:9531`                             | Address to listen on for web interface and telemetry.                                                                                                                                    |
 | `web.telemetry-path`<br/>`WEB_TELEMETRY_PATH`  | No       | `/metrics`                          | Path under which to expose metrics.                                                                                                                                                      |
 | `artifactory.scrape-uri`<br/>`ARTI_SCRAPE_URI` | No       | `http://localhost:8081/artifactory` | URI on which to scrape JFrog Artifactory.                                                                                                                                                |
-| `xray.scrape-uri`<br/>`XRAY_SCRAPE_URI` | No | `http://localhost:8081/xray` | URI on which to scrape JFrog Artifactory.                                                                                                                                                                    |
+| `xray.scrape-uri`<br/>`XRAY_SCRAPE_URI` | No | `http://localhost:8081/xray` | URI on which to scrape JFrog Xray.                                                                                                                                                                    |
 | `artifactory.ssl-verify`<br/>`ARTI_SSL_VERIFY` | No       | `true`                              | Flag that enables SSL certificate verification for the scrape URI.                                                                                                                       |
 | `artifactory.timeout`<br/>`ARTI_TIMEOUT`       | No       | `5s`                                | Timeout for trying to get stats from JFrog Artifactory.                                                                                                                                  |
 | `use-cache`<br/>`USE_CACHE`                    | No       | `false`                             | Use caching for API responses to circumvent timeouts.                                                                                                                                    |

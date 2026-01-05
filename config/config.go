@@ -172,7 +172,7 @@ func NewConfig() (*Config, error) {
 			return nil, err
 		}
 	} else if optMetrics.Xray {
-		return nil, fmt.Errorf("Jfrog Xray scrape URI must be set if optional metric Xray is enabled")
+		return nil, fmt.Errorf("JFrog Xray scrape URI must be set if optional metric Xray is enabled")
 	}
 
 	logger := l.New(

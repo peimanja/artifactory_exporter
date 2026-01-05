@@ -41,12 +41,12 @@ func (e *Exporter) processOpenMetrics(openMetrics artifactory.OpenMetrics, ch ch
 	metrics, err := parser.TextToMetricFamilies(strings.NewReader(openMetricsString))
 	if err != nil {
 		e.logger.Error(
-			fmt.Sprintf("Openmetrics downloaded from %s cannot be parsed using the \"github.com/prometheus/common/expfmt\".", source),
+			fmt.Sprintf("OpenMetrics downloaded from %s cannot be parsed using the \"github.com/prometheus/common/expfmt\".", source),
 			"err", err.Error(),
 			"response.body", openMetricsString,
 		)
 		return fmt.Errorf(
-			"problem when parsing openmetrics downloaded from %s: %w",
+			"problem when parsing OpenMetrics downloaded from %s: %w",
 			source, err,
 		)
 	}
@@ -62,7 +62,7 @@ func (e *Exporter) processOpenMetrics(openMetrics artifactory.OpenMetrics, ch ch
 	for _, family := range metrics {
 		fName := family.GetName()
 		fHelp := family.GetHelp()
-		if strings.HasPrefix(fName, "process_") { // avoid conflict with promethues internal metrics
+		if strings.HasPrefix(fName, "process_") { // avoid conflict with prometheus internal metrics
 			fName = source + fName
 		}
 		for _, metric := range family.Metric {
