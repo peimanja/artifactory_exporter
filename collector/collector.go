@@ -226,12 +226,10 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
 		e.exportFederationMirrorLags(ch)
 		e.exportFederationUnavailableMirrors(ch)
-		anySuccess = true
 	}
 
 	if e.exporterRuntimeConfig.OptionalMetrics.AccessFederationValidate {
 		e.exportAccessFederationValidate(ch)
-		anySuccess = true
 	}
 
 	return anySuccess
