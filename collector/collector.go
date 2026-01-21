@@ -174,39 +174,53 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) float64 {
 }
 
 // runExportSteps performs the main metric collection sequence.
-// Returns false if any required step fails.
+// Continues collecting metrics even if individual step fails.
 func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
+	anySuccess := false
+
 	if e.exporterRuntimeConfig.OptionalMetrics.OpenMetrics {
 		if err := e.exportOpenMetrics(ch); err != nil {
-			return false
+			e.logger.Error("Failed to export open metrics", "err", err)
+		} else {
+			anySuccess = true
 		}
 	}
 	if err := e.exportSystem(ch); err != nil {
-		return false
+		e.logger.Error("Failed to export system metrics", "err", err)
+	} else {
+		anySuccess = true
 	}
 	if err := e.exportSystemHALicenses(ch); err != nil {
-		return false
+		e.logger.Error("Failed to export HA licenses", "err", err)
+	} else {
+		anySuccess = true
 	}
 
 	storageInfo, err := e.client.FetchStorageInfo()
 	if err != nil {
 		e.totalAPIErrors.Inc()
-		return false
+		e.logger.Error("Failed to fetch storage info", "err", err)
+	} else {
+		e.exportStorage(storageInfo, ch)
+		anySuccess = true
 	}
-	e.exportStorage(storageInfo, ch)
 
 	repoSummaryList, err := e.extractRepo(storageInfo)
 	if err != nil {
-		return false
+		e.logger.Error("Failed to extract repo summary", "err", err)
+	} else {
+		e.exportRepo(repoSummaryList, ch)
+		anySuccess = true
 	}
-	e.exportRepo(repoSummaryList, ch)
 
 	if e.exporterRuntimeConfig.OptionalMetrics.Artifacts {
 		repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
 		if err != nil {
-			return false
+			e.logger.Error("Failed to get total artifacts", "err", err)
+		} else {
+			e.exportArtifacts(repoSummaryList, ch)
+			anySuccess = true
 		}
-		e.exportArtifacts(repoSummaryList, ch)
 	}
 
 	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
@@ -218,7 +232,7 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 		e.exportAccessFederationValidate(ch)
 	}
 
-	return true
+	return anySuccess
 }
 
 // collectBackgroundTasks emits a count of background tasks by (type, state) combination.

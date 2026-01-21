@@ -120,13 +120,13 @@ func TestLicenseInfo_ValidSeconds(t *testing.T) {
 		},
 		{
 			name:        "Valid date format",
-			license:     LicenseInfo{Type: "Enterprise", ValidThrough: "Dec 31, 2025"},
+			license:     LicenseInfo{Type: "Enterprise", ValidThrough: "Dec 31, 2027"},
 			wantErr:     false,
 			description: "Standard date format should parse correctly",
 		},
 		{
 			name:        "Edge license with XX day",
-			license:     LicenseInfo{Type: "Edge", ValidThrough: "Dec XX, 2025"},
+			license:     LicenseInfo{Type: "Edge", ValidThrough: "Dec XX, 2027"},
 			wantErr:     false,
 			description: "Edge licenses with XX day should default to 1st of month",
 		},
@@ -192,7 +192,7 @@ func TestLicenseInfo_ValidSeconds_EdgeCaseHandling(t *testing.T) {
 	// Test the specific case from the bug report
 	license := LicenseInfo{
 		Type:         "Edge",
-		ValidThrough: "Dec XX, 2025", // Use December instead of July since we're in August 2025
+		ValidThrough: "Dec XX, 2027", // Use December instead of July since we're in August 2025
 		LicensedTo:   "Test Company",
 	}
 
@@ -201,13 +201,13 @@ func TestLicenseInfo_ValidSeconds_EdgeCaseHandling(t *testing.T) {
 		t.Errorf("ValidSeconds() for Edge license with XX day failed: %v", err)
 	}
 
-	// The function should have normalized "Dec XX, 2025" to "Dec 1, 2025"
-	// and calculated seconds from current time to December 1, 2025
+	// The function should have normalized "Dec XX, 2027" to "Dec 1, 2027"
+	// and calculated seconds from current time to December 1, 2027
 	if seconds <= 0 {
 		t.Errorf("ValidSeconds() returned non-positive value %d, expected positive future date", seconds)
 	}
 
-	t.Logf("Edge license with 'Dec XX, 2025' correctly parsed, returning %d seconds", seconds)
+	t.Logf("Edge license with 'Dec XX, 2027' correctly parsed, returning %d seconds", seconds)
 }
 
 func TestLicenseInfo_ValidSeconds_DateNormalization(t *testing.T) {
@@ -218,13 +218,13 @@ func TestLicenseInfo_ValidSeconds_DateNormalization(t *testing.T) {
 	}{
 		{
 			name:     "XX in day position",
-			input:    "Dec XX, 2025",
-			expected: "normalized to Dec 1, 2025",
+			input:    "Dec XX, 2027",
+			expected: "normalized to Dec 1, 2027",
 		},
 		{
 			name:     "Regular numeric day",
-			input:    "Dec 15, 2025",
-			expected: "remains Dec 15, 2025",
+			input:    "Dec 15, 2027",
+			expected: "remains Dec 15, 2027",
 		},
 		{
 			name:     "Single digit day",
