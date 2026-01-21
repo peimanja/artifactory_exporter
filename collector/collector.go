@@ -201,26 +201,26 @@ func (e *Exporter) runExportSteps(ch chan<- prometheus.Metric) bool {
 		e.totalAPIErrors.Inc()
 		e.logger.Error("Failed to fetch storage info", "err", err)
 	} else {
+		e.exportStorage(storageInfo, ch)
 		anySuccess = true
 	}
-	e.exportStorage(storageInfo, ch)
 
 	repoSummaryList, err := e.extractRepo(storageInfo)
 	if err != nil {
 		e.logger.Error("Failed to extract repo summary", "err", err)
 	} else {
+		e.exportRepo(repoSummaryList, ch)
 		anySuccess = true
 	}
-	e.exportRepo(repoSummaryList, ch)
 
 	if e.exporterRuntimeConfig.OptionalMetrics.Artifacts {
 		repoSummaryList, err = e.getTotalArtifacts(repoSummaryList)
 		if err != nil {
 			e.logger.Error("Failed to get total artifacts", "err", err)
 		} else {
+			e.exportArtifacts(repoSummaryList, ch)
 			anySuccess = true
 		}
-		e.exportArtifacts(repoSummaryList, ch)
 	}
 
 	if e.exporterRuntimeConfig.OptionalMetrics.FederationStatus && e.client.IsFederationEnabled() {
