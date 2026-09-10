@@ -93,7 +93,7 @@ func (l LicenseInfo) TypeNormalized() string {
 
 const USAFullDate = "Jan 2, 2006"
 
-func (l LicenseInfo) ValidSeconds() (int64, error) {
+func (l LicenseInfo) ValidSeconds(now time.Time) (int64, error) {
 	if l.IsOSS() {
 		return 0, nil
 	}
@@ -116,7 +116,7 @@ func (l LicenseInfo) ValidSeconds() (int64, error) {
 		)
 	}
 	// Calculate seconds until expiration
-	return parsedTime.Unix() - time.Now().Unix(), nil
+	return parsedTime.Unix() - now.Unix(), nil
 }
 
 // FetchLicense makes the API call to license endpoint and returns LicenseInfo

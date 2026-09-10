@@ -2,6 +2,7 @@ package collector
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -34,7 +35,7 @@ func (e *Exporter) exportSystem(ch chan<- prometheus.Metric) error {
 		e.totalAPIErrors.Inc()
 		return err
 	}
-	licenseValSec, err := licenseInfo.ValidSeconds()
+	licenseValSec, err := licenseInfo.ValidSeconds(time.Now())
 	if err != nil {
 		e.logger.Warn(
 			"Couldn't get Artifactory license validity",
@@ -94,7 +95,7 @@ func (e *Exporter) exportSystemHALicenses(ch chan<- prometheus.Metric) error {
 	}
 
 	for _, licenseInfo := range licensesInfo.Licenses {
-		licenseValSec, err := licenseInfo.ValidSeconds()
+		licenseValSec, err := licenseInfo.ValidSeconds(time.Now())
 		if err != nil {
 			e.logger.Warn(
 				"Couldn't get Artifactory license validity",
