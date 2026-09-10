@@ -3,6 +3,7 @@ package artifactory
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 func TestLicenseInfo_JSONUnmarshaling(t *testing.T) {
@@ -225,7 +226,7 @@ func TestValidThroughDateNormalization(t *testing.T) {
 				ValidThrough: tt.input,
 			}
 
-			_, err := license.ValidSeconds()
+			_, err := license.ValidSeconds(time.Now())
 
 			if tt.expectErr && err == nil {
 				t.Errorf("Expected error for input '%s', but got none", tt.input)

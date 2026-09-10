@@ -2,6 +2,7 @@ package artifactory
 
 import (
 	"testing"
+	"time"
 )
 
 func TestLicenseInfo_IsOSS(t *testing.T) {
@@ -158,7 +159,7 @@ func TestLicenseInfo_ValidSeconds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			seconds, err := tt.license.ValidSeconds()
+			seconds, err := tt.license.ValidSeconds(time.Now())
 
 			if tt.wantErr {
 				if err == nil {
@@ -196,7 +197,9 @@ func TestLicenseInfo_ValidSeconds_EdgeCaseHandling(t *testing.T) {
 		LicensedTo:   "Test Company",
 	}
 
-	seconds, err := license.ValidSeconds()
+	time, _ := time.Parse("2006-01-02", "2025-11-30")
+
+	seconds, err := license.ValidSeconds(time)
 	if err != nil {
 		t.Errorf("ValidSeconds() for Edge license with XX day failed: %v", err)
 	}
@@ -240,7 +243,7 @@ func TestLicenseInfo_ValidSeconds_DateNormalization(t *testing.T) {
 				ValidThrough: tt.input,
 			}
 
-			_, err := license.ValidSeconds()
+			_, err := license.ValidSeconds(time.Now())
 			if err != nil {
 				t.Errorf("ValidSeconds() failed for input %s: %v", tt.input, err)
 			}
