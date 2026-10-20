@@ -1,6 +1,6 @@
 module github.com/peimanja/artifactory_exporter
 
-go 1.23
+go 1.24
 
 require (
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -15,7 +15,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	golang.org/x/sys v0.23.0 // indirect
